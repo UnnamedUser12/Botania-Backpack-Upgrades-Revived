@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "botaniabackpack:item/advanced_mana_infusion_upgrade"
+  }
+}

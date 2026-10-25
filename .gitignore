@@ -1,0 +1,29 @@
+# MacOS DS_Store files
+.DS_Store
+
+# Gradle cache folder
+.gradle
+
+# Gradle build folder
+build
+
+# IntelliJ
+out/
+.idea
+*.iml
+.idea_modules/
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# virtual machine crash logs
+hs_err_pid*
+
+# Common working directory
+run
+
+# Datagen cache
+src/generated/resources/.cache/

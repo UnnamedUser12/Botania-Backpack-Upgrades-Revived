@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_tank_upgrade": {
+      "conditions": {
+        "items": [
+          {
+            "items": "sophisticatedbackpacks:tank_upgrade"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "botaniabackpack:mana_tank_upgrade"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_tank_upgrade"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "botaniabackpack:mana_tank_upgrade"
+    ]
+  }
+}

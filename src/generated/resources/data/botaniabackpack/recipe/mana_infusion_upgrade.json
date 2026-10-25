@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "D": {
+      "item": "botania:mana_powder"
+    },
+    "M": {
+      "tag": "botania:manasteel_ingots"
+    },
+    "P": {
+      "item": "botania:mana_pearl"
+    },
+    "R": {
+      "item": "botania:rune_mana"
+    },
+    "S": {
+      "item": "sophisticatedbackpacks:smelting_upgrade"
+    }
+  },
+  "pattern": [
+    "MDM",
+    "PSP",
+    "MRM"
+  ],
+  "result": {
+    "count": 1,
+    "id": "botaniabackpack:mana_infusion_upgrade"
+  }
+}

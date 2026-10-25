@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_mana_infusion_upgrade": {
+      "conditions": {
+        "items": [
+          {
+            "items": "botaniabackpack:mana_infusion_upgrade"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "botaniabackpack:advanced_mana_infusion_upgrade"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_mana_infusion_upgrade"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "botaniabackpack:advanced_mana_infusion_upgrade"
+    ]
+  }
+}

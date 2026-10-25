@@ -1,0 +1,206 @@
+plugins {
+    id 'java-library'
+    id 'eclipse'
+    id 'idea'
+    id 'net.neoforged.moddev' version '2.0.147'
+}
+
+version = "${mcversion}-${mod_version}-${tag_lanzador}"
+group = "${mod_group}"
+base {
+    archivesName = "${mod_named}"
+}
+
+// Minecraft 1.21.1 needs Java 21
+java.toolchain {
+    vendor = JvmVendorSpec.ADOPTIUM
+    languageVersion = JavaLanguageVersion.of(java_version.toInteger())
+}
+
+// Genera tambien <nombre>-sources.jar junto al jar del mod
+java {
+    withSourcesJar()
+}
+
+// GameTests live in their own source set so they never end up in the release jar
+sourceSets {
+    gametest {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+
+neoForge {
+    version = "${neoversion}"
+    addModdingDependenciesTo(sourceSets.gametest)
+
+    runs {
+        client {
+            client()
+            gameDirectory = project.file('run')
+            // Abre directo el mundo de pruebas: ./gradlew runClient -Pvm_world=<carpeta en run/saves>
+            def world = findProperty('vm_world') ?: 'botania_test'
+            if (project.file("run/saves/${world}").isDirectory()) {
+                programArguments.addAll '--quickPlaySingleplayer', world.toString()
+            }
+        }
+
+        data {
+            data()
+            gameDirectory = project.file('run')
+            // Datagen: writes into src/generated/resources, reading existing assets (textures) from src/main/resources
+            programArguments.addAll '--mod', "${modid}", '--all', '--output', file('src/generated/resources').getAbsolutePath(), '--existing', file('src/main/resources').getAbsolutePath()
+        }
+
+        // ./gradlew runGameTestServer -> runs the GameTests of src/gametest (no window, exits when done)
+        gameTestServer {
+            type = 'gameTestServer'
+            gameDirectory = project.file('run/gametest')
+            systemProperty 'neoforge.enabledGameTestNamespaces', modid.toString()
+            sourceSet = sourceSets.gametest
+        }
+
+        server {
+            server()
+            gameDirectory = project.file('run')
+            programArgument '--nogui'
+        }
+    }
+
+    mods {
+        "${modid}" {
+            sourceSet(sourceSets.main)
+            // Test-only code (GameTests); not part of the release jar
+            sourceSet(sourceSets.gametest)
+        }
+    }
+}
+
+// Generated data (lang, recipes, models, tags) lives next to the hand-written resources
+sourceSets.main.resources {
+    srcDir 'src/generated/resources'
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'BlameJared'
+        url = 'https://maven.blamejared.com'
+    }
+    maven {
+        name = 'Curios'
+        url = 'https://maven.theillusivec4.top/'
+    }
+    maven {
+        name = 'Curse Maven'
+        url = 'https://cursemaven.com'
+        content {
+            includeGroup 'curse.maven'
+        }
+    }
+}
+
+dependencies {
+    // Botania Revived (package velrondevs.botania, modid botania)
+    implementation "curse.maven:botania-revived-1725641:${botania_revived_file_id}"
+    // Botania Revived needs Patchouli at runtime
+    implementation "vazkii.patchouli:Patchouli:${patchouli_version}"
+
+    // Sophisticated Backpacks + Sophisticated Core
+    implementation "curse.maven:sophisticated-backpacks-422301:${sophisticatedbackpacks_version}"
+    implementation "curse.maven:sophisticated-core-618298:${sophisticatedcore_version}"
+
+    // Curios API (Sophisticated Backpacks / Botania Revived use it)
+    compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}:api"
+    runtimeOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}"
+
+    // JEI (dev runtime only)
+    compileOnly "mezz.jei:jei-${mcversion}-common-api:${jei_version}"
+    compileOnly "mezz.jei:jei-${mcversion}-neoforge-api:${jei_version}"
+    runtimeOnly "mezz.jei:jei-${mcversion}-neoforge:${jei_version}"
+}
+
+test {
+    enabled = false
+}
+
+jar {
+    manifest {
+        attributes([
+                "Specification-Title": mod_named,
+                "Specification-Vendor": "${author}",
+                "Specification-Version": "1", // We are version 1 of ourselves
+                "Implementation-Title": mod_named,
+                "Implementation-Version": "${version}",
+                "Implementation-Vendor" :"${author}",
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+}
+
+// Includes the license file in the built mod
+tasks.withType(Jar).configureEach {
+    from(rootProject.file('LICENSE')) { rename { "${it}-${modid}" } }
+}
+
+tasks.withType(ProcessResources).configureEach {
+    exclude '.cache/**'
+    var replaceProperties = [
+            mod_id                        : modid,
+            mod_name                      : mod_name,
+            mod_author                    : author,
+            version                       : mod_version,
+            license                       : license,
+            description                   : project.description,
+            minecraft_version_range       : minecraft_version_range,
+            neoforge_version              : neoversion,
+            neoforge_loader_version_range : loader_version,
+            botania_version_range         : botania_version_range,
+            sophisticatedcore_version     : '[1.4.6,)',
+            sophisticatedbackpacks_version: '[3.25,)',
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching(['META-INF/neoforge.mods.toml']) {
+        expand replaceProperties
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+}
+
+
+// Empty 3x3x3 structure template shared by all GameTests
+def gametestStructureDir = layout.buildDirectory.dir('generated/gametestResources')
+sourceSets.gametest.resources {
+    srcDir gametestStructureDir
+}
+tasks.register('generateEmptyGameTestStructure') {
+    def outputFile = gametestStructureDir.map { it.file("data/${modid}/structure/empty.nbt") }
+    outputs.file(outputFile)
+    doLast {
+        def target = outputFile.get().asFile
+        target.parentFile.mkdirs()
+        new java.io.DataOutputStream(new java.util.zip.GZIPOutputStream(new java.io.FileOutputStream(target))).withCloseable { output ->
+            output.writeByte(10) // root compound
+            output.writeUTF('')
+            output.writeByte(3) // DataVersion (1.21.1)
+            output.writeUTF('DataVersion')
+            output.writeInt(3955)
+            output.writeByte(9) // size: list<int>
+            output.writeUTF('size')
+            output.writeByte(3)
+            output.writeInt(3)
+            [3, 3, 3].each(output::writeInt)
+            ['blocks', 'entities', 'palette'].each { name ->
+                output.writeByte(9) // empty list<compound>
+                output.writeUTF(name)
+                output.writeByte(10)
+                output.writeInt(0)
+            }
+            output.writeByte(0) // end root compound
+        }
+    }
+}
+tasks.named('processGametestResources') { dependsOn tasks.named('generateEmptyGameTestStructure') }

@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": {
+      "item": "botania:mana_pool"
+    },
+    "L": {
+      "item": "botania:livingrock"
+    },
+    "M": {
+      "tag": "botania:manasteel_ingots"
+    },
+    "P": {
+      "item": "botania:mana_pearl"
+    },
+    "T": {
+      "item": "sophisticatedbackpacks:tank_upgrade"
+    }
+  },
+  "pattern": [
+    "MPM",
+    "LTL",
+    "MBM"
+  ],
+  "result": {
+    "count": 1,
+    "id": "botaniabackpack:mana_tank_upgrade"
+  }
+}

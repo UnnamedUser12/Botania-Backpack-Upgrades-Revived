@@ -1,0 +1,93 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "request": "launch",
+      "name": "Client",
+      "presentation": {
+        "group": "Mod Development - Botania-Backpack-Upgrades",
+        "order": 0
+      },
+      "projectName": "Botania-Backpack-Upgrades",
+      "mainClass": "net.neoforged.devlaunch.Main",
+      "args": [
+        "@E:\\revived mods new\\botania addons\\Botania-Backpack-Upgrades\\build\\moddev\\clientRunProgramArgs.txt"
+      ],
+      "vmArgs": [
+        "@E:\\revived mods new\\botania addons\\Botania-Backpack-Upgrades\\build\\moddev\\clientRunVmArgs.txt",
+        "-Dfml.modFolders\u003dbotaniabackpack%%E:\\revived mods new\\botania addons\\Botania-Backpack-Upgrades\\bin\\main;botaniabackpack%%E:\\revived mods new\\botania addons\\Botania-Backpack-Upgrades\\bin\\gametest"
+      ],
+      "cwd": "${workspaceFolder}\\run",
+      "env": {},
+      "console": "internalConsole",
+      "shortenCommandLine": "none"
+    },
+    {
+      "type": "java",
+      "request": "launch",
+      "name": "Data",
+      "presentation": {
+        "group": "Mod Development - Botania-Backpack-Upgrades",
+        "order": 1
+      },
+      "projectName": "Botania-Backpack-Upgrades",
+      "mainClass": "net.neoforged.devlaunch.Main",
+      "args": [
+        "@E:\\revived mods new\\botania addons\\Botania-Backpack-Upgrades\\build\\moddev\\dataRunProgramArgs.txt"
+      ],
+      "vmArgs": [
+        "@E:\\revived mods new\\botania addons\\Botania-Backpack-Upgrades\\build\\moddev\\dataRunVmArgs.txt",
+        "-Dfml.modFolders\u003dbotaniabackpack%%E:\\revived mods new\\botania addons\\Botania-Backpack-Upgrades\\bin\\main;botaniabackpack%%E:\\revived mods new\\botania addons\\Botania-Backpack-Upgrades\\bin\\gametest"
+      ],
+      "cwd": "${workspaceFolder}\\run",
+      "env": {},
+      "console": "internalConsole",
+      "shortenCommandLine": "none"
+    },
+    {
+      "type": "java",
+      "request": "launch",
+      "name": "GameTestServer",
+      "presentation": {
+        "group": "Mod Development - Botania-Backpack-Upgrades",
+        "order": 2
+      },
+      "projectName": "Botania-Backpack-Upgrades",
+      "mainClass": "net.neoforged.devlaunch.Main",
+      "args": [
+        "@E:\\revived mods new\\botania addons\\Botania-Backpack-Upgrades\\build\\moddev\\gameTestServerRunProgramArgs.txt"
+      ],
+      "vmArgs": [
+        "@E:\\revived mods new\\botania addons\\Botania-Backpack-Upgrades\\build\\moddev\\gameTestServerRunVmArgs.txt",
+        "-Dfml.modFolders\u003dbotaniabackpack%%E:\\revived mods new\\botania addons\\Botania-Backpack-Upgrades\\bin\\main;botaniabackpack%%E:\\revived mods new\\botania addons\\Botania-Backpack-Upgrades\\bin\\gametest"
+      ],
+      "cwd": "${workspaceFolder}\\run\\gametest",
+      "env": {},
+      "console": "internalConsole",
+      "shortenCommandLine": "none"
+    },
+    {
+      "type": "java",
+      "request": "launch",
+      "name": "Server",
+      "presentation": {
+        "group": "Mod Development - Botania-Backpack-Upgrades",
+        "order": 3
+      },
+      "projectName": "Botania-Backpack-Upgrades",
+      "mainClass": "net.neoforged.devlaunch.Main",
+      "args": [
+        "@E:\\revived mods new\\botania addons\\Botania-Backpack-Upgrades\\build\\moddev\\serverRunProgramArgs.txt"
+      ],
+      "vmArgs": [
+        "@E:\\revived mods new\\botania addons\\Botania-Backpack-Upgrades\\build\\moddev\\serverRunVmArgs.txt",
+        "-Dfml.modFolders\u003dbotaniabackpack%%E:\\revived mods new\\botania addons\\Botania-Backpack-Upgrades\\bin\\main;botaniabackpack%%E:\\revived mods new\\botania addons\\Botania-Backpack-Upgrades\\bin\\gametest"
+      ],
+      "cwd": "${workspaceFolder}\\run",
+      "env": {},
+      "console": "internalConsole",
+      "shortenCommandLine": "none"
+    }
+  ]
+}
