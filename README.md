@@ -75,4 +75,4 @@ slotsInRow = 4
 
 ## NeoForge 1.21.1 port notes
 
-This directory is a NeoForge port (by UnnamedUser12) of the original mod (https://github.com/taisuiyileba/Botania-Backpack-Upgrades, MIT, by suiyi, based on upstream commit fdc34c1) to Minecraft 1.21.1 / NeoForge 21.1.240, built against Botania Revived (package `velrondevs.botania`) and Sophisticated Backpacks / Sophisticated Core for 1.21.1. The text above is the original (Chinese) README of the 1.20.1 Forge version. The upstream GameTests and JUnit tests are not part of this port.
+This directory is a NeoForge port (by UnnamedUser12) of the original mod (https://github.com/taisuiyileba/Botania-Backpack-Upgrades, MIT, by suiyi, based on upstream commit fdc34c1) to Minecraft 1.21.1 / NeoForge 21.1.240, built against Botania Revived 1.0.3 (package `velrondevs.botania`), Sophisticated Core 1.5.19 and Sophisticated Backpacks 3.26.17 (minimum versions) for 1.21.1. The text above is the original (Chinese) README of the 1.20.1 Forge version. The upstream GameTests and JUnit tests are not part of this port.

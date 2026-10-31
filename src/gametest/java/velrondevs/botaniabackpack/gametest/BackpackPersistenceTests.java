@@ -58,6 +58,9 @@ public final class BackpackPersistenceTests {
 		var tag = be.saveWithFullMetadata(registries);
 		BlockEntity loaded = BlockEntity.loadStatic(helper.absolutePos(rel), be.getBlockState(), tag, registries);
 		helper.assertTrue(loaded instanceof BackpackBlockEntity, "reloaded as backpack block entity");
+		// Sophisticated Backpacks 3.26 resolves the stored backpack when the block entity is attached to a level (onLoad)
+		loaded.setLevel(helper.getLevel());
+		loaded.onLoad();
 		var tank = TestSupport.tank(((BackpackBlockEntity) loaded).getBackpackWrapper());
 		helper.assertTrue(tank.getMana() == 777, "reloaded mana " + tank.getMana());
 		helper.succeed();

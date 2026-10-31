@@ -10,7 +10,7 @@ import net.minecraft.world.inventory.InventoryMenu;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.p3pp3rf1y.sophisticatedcore.client.gui.StorageScreenBase;
-import net.p3pp3rf1y.sophisticatedcore.client.gui.UpgradeInventoryPartBase;
+import net.p3pp3rf1y.sophisticatedcore.client.gui.UpgradeInventoryControlBase;
 import net.p3pp3rf1y.sophisticatedcore.client.gui.utils.Dimension;
 import net.p3pp3rf1y.sophisticatedcore.client.gui.utils.GuiHelper;
 import net.p3pp3rf1y.sophisticatedcore.client.gui.utils.Position;
@@ -21,17 +21,18 @@ import velrondevs.botania.api.BotaniaCapabilities;
 import java.util.List;
 import java.util.Optional;
 
-public final class ManaTankInventoryPart extends UpgradeInventoryPartBase<ManaTankUpgradeContainer> {
+public final class ManaTankInventoryControl extends UpgradeInventoryControlBase {
 	private static final TextureBlitData OVERLAY = new TextureBlitData(GuiHelper.GUI_CONTROLS, Dimension.SQUARE_256, new UV(47, 30),
 			new Dimension(16, 18));
 
+	private final ManaTankUpgradeContainer container;
 	private final Position position;
 	private final int height;
 	private final StorageScreenBase<?> screen;
 
-	public ManaTankInventoryPart(int upgradeSlot, ManaTankUpgradeContainer container, Position position, int height,
+	public ManaTankInventoryControl(int upgradeSlot, ManaTankUpgradeContainer container, Position position, int height,
 			StorageScreenBase<?> screen) {
-		super(upgradeSlot, container);
+		this.container = container;
 		this.position = position;
 		this.height = height;
 		this.screen = screen;

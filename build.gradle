@@ -98,6 +98,13 @@ repositories {
             includeGroup 'curse.maven'
         }
     }
+    maven {
+        name = 'Modrinth'
+        url = 'https://api.modrinth.com/maven'
+        content {
+            includeGroup 'maven.modrinth'
+        }
+    }
 }
 
 dependencies {
@@ -107,8 +114,8 @@ dependencies {
     implementation "vazkii.patchouli:Patchouli:${patchouli_version}"
 
     // Sophisticated Backpacks + Sophisticated Core
-    implementation "curse.maven:sophisticated-backpacks-422301:${sophisticatedbackpacks_version}"
-    implementation "curse.maven:sophisticated-core-618298:${sophisticatedcore_version}"
+    implementation "maven.modrinth:TyCTlI4b:${sophisticatedbackpacks_version}"
+    implementation "maven.modrinth:nmoqTijg:${sophisticatedcore_version}"
 
     // Curios API (Sophisticated Backpacks / Botania Revived use it)
     compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}:api"
@@ -156,8 +163,8 @@ tasks.withType(ProcessResources).configureEach {
             neoforge_version              : neoversion,
             neoforge_loader_version_range : loader_version,
             botania_version_range         : botania_version_range,
-            sophisticatedcore_version     : '[1.4.6,)',
-            sophisticatedbackpacks_version: '[3.25,)',
+            sophisticatedcore_version     : '[1.5.19,)',
+            sophisticatedbackpacks_version: '[3.26.17,)',
     ]
     inputs.properties replaceProperties
 
