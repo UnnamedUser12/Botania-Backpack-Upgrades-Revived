@@ -43,5 +43,5 @@ description = '''${description}'''
     modId = "botania"
     type = "required"
     versionRange = "${botania_version_range}"
-    ordering = "AFTER"
+    ordering = "BEFORE"
     side = "BOTH"

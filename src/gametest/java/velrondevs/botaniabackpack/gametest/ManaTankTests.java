@@ -124,14 +124,14 @@ public final class ManaTankTests {
 		BlockPos plainAbs = helper.absolutePos(plain);
 		BlockPos tankAbs = helper.absolutePos(withTank);
 		for (Direction side : new Direction[] {null, Direction.UP, Direction.NORTH}) {
-			helper.assertTrue(level.getCapability(BotaniaCapabilities.MANA_RECEIVER, plainAbs, side) == null,
-					"plain backpack must not expose MANA_RECEIVER (side " + side + ")");
-			helper.assertTrue(level.getCapability(BotaniaCapabilities.SPARK_ATTACHABLE, plainAbs, side) == null,
-					"plain backpack must not expose SPARK_ATTACHABLE (side " + side + ")");
+			helper.assertTrue(!(level.getCapability(BotaniaCapabilities.MANA_RECEIVER, plainAbs, side) instanceof ManaBackpackPool),
+					"plain backpack must not expose the mana tank pool as MANA_RECEIVER (side " + side + ")");
+			helper.assertTrue(!(level.getCapability(BotaniaCapabilities.SPARK_ATTACHABLE, plainAbs, side) instanceof ManaBackpackPool),
+					"plain backpack must not expose the mana tank pool as SPARK_ATTACHABLE (side " + side + ")");
 			ManaReceiver receiver = level.getCapability(BotaniaCapabilities.MANA_RECEIVER, tankAbs, side);
-			helper.assertTrue(receiver instanceof ManaPool, "tank backpack must expose a ManaPool receiver (side " + side + ")");
+			helper.assertTrue(receiver instanceof ManaBackpackPool, "tank backpack must expose the mana tank pool as receiver (side " + side + ")");
 			SparkAttachable attachable = level.getCapability(BotaniaCapabilities.SPARK_ATTACHABLE, tankAbs, side);
-			helper.assertTrue(attachable != null && attachable.canAttachSpark(ItemStack.EMPTY), "tank backpack must be spark attachable");
+			helper.assertTrue(attachable instanceof ManaBackpackPool && attachable.canAttachSpark(ItemStack.EMPTY), "tank backpack must be spark attachable");
 		}
 		helper.succeed();
 	}
@@ -142,19 +142,19 @@ public final class ManaTankTests {
 		BackpackBlockEntity be = TestSupport.placeBackpack(helper, rel, TestSupport.newBackpack());
 		BlockPos abs = helper.absolutePos(rel);
 		var level = helper.getLevel();
-		helper.assertTrue(level.getCapability(BotaniaCapabilities.MANA_RECEIVER, abs, null) == null, "starts without capability");
+		helper.assertTrue(!(level.getCapability(BotaniaCapabilities.MANA_RECEIVER, abs, null) instanceof ManaBackpackPool), "starts without the tank capability");
 
 		// Cached lookups (like Botania spreaders hold) must follow upgrade changes
 		var cache = net.neoforged.neoforge.capabilities.BlockCapabilityCache.create(BotaniaCapabilities.MANA_RECEIVER, level, abs, null);
-		helper.assertTrue(cache.getCapability() == null, "cache starts empty");
+		helper.assertTrue(!(cache.getCapability() instanceof ManaBackpackPool), "cache starts without the tank capability");
 
 		int slot = TestSupport.install(be.getBackpackWrapper(), ModItems.MANA_TANK_UPGRADE.get());
-		helper.assertTrue(level.getCapability(BotaniaCapabilities.MANA_RECEIVER, abs, null) != null, "capability appears after installing the tank");
-		helper.assertTrue(cache.getCapability() != null, "cached lookup must see the newly installed tank");
+		helper.assertTrue(level.getCapability(BotaniaCapabilities.MANA_RECEIVER, abs, null) instanceof ManaBackpackPool, "capability appears after installing the tank");
+		helper.assertTrue(cache.getCapability() instanceof ManaBackpackPool, "cached lookup must see the newly installed tank");
 
 		be.getBackpackWrapper().getUpgradeHandler().setStackInSlot(slot, ItemStack.EMPTY);
-		helper.assertTrue(level.getCapability(BotaniaCapabilities.MANA_RECEIVER, abs, null) == null, "capability disappears after removing the tank");
-		helper.assertTrue(cache.getCapability() == null, "cached lookup must see the tank removal");
+		helper.assertTrue(!(level.getCapability(BotaniaCapabilities.MANA_RECEIVER, abs, null) instanceof ManaBackpackPool), "capability disappears after removing the tank");
+		helper.assertTrue(!(cache.getCapability() instanceof ManaBackpackPool), "cached lookup must see the tank removal");
 		helper.succeed();
 	}
 

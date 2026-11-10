@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2
+- Fixed the mod not loading together with Botania Revived 1.0.7. Botania Revived 1.0.7 requires Sophisticated Core 1.5.21 and Sophisticated Backpacks 3.26.18 or newer, so those are now the minimum versions.
+- Botania Revived 1.0.7 also adds its own mana receiver to every backpack, which hid the Mana Tank from spreaders, bursts and sparks. The mod now loads before Botania, so the Mana Tank is used when a backpack has one and Botania's receiver otherwise.
+- The mod now requires Botania Revived 2.0.0 or newer, and is built and tested against Botania Revived 2.0.0, Sophisticated Core 1.5.21 and Sophisticated Backpacks 3.26.18.
+
 ## 1.0.1
 - Fixed a crash on startup with Sophisticated Core 1.5.x / Sophisticated Backpacks 3.26.x (`NoClassDefFoundError: UpgradeGuiManager$IUpgradeInventoryPartFactory`).
 - Updated the mana tank bar to the new Sophisticated Core GUI API (`UpgradeInventoryControlBase` / `UpgradeGuiManager.registerInventoryControl`).

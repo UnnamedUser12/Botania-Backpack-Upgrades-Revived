@@ -114,8 +114,8 @@ dependencies {
     implementation "vazkii.patchouli:Patchouli:${patchouli_version}"
 
     // Sophisticated Backpacks + Sophisticated Core
-    implementation "maven.modrinth:TyCTlI4b:${sophisticatedbackpacks_version}"
-    implementation "maven.modrinth:nmoqTijg:${sophisticatedcore_version}"
+    implementation "maven.modrinth:sophisticated-backpacks:${sophisticatedbackpacks_version}"
+    implementation "maven.modrinth:sophisticated-core:${sophisticatedcore_version}"
 
     // Curios API (Sophisticated Backpacks / Botania Revived use it)
     compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}:api"
@@ -163,8 +163,8 @@ tasks.withType(ProcessResources).configureEach {
             neoforge_version              : neoversion,
             neoforge_loader_version_range : loader_version,
             botania_version_range         : botania_version_range,
-            sophisticatedcore_version     : '[1.5.19,)',
-            sophisticatedbackpacks_version: '[3.26.17,)',
+            sophisticatedcore_version     : '[1.5.21,)',
+            sophisticatedbackpacks_version: '[3.26.18,)',
     ]
     inputs.properties replaceProperties
 
