@@ -11,9 +11,6 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 import java.util.function.Supplier;
 
-/**
- * Upgrade state formerly kept in raw item NBT, now stored as data components on the upgrade stack.
- */
 public final class ModDataComponents {
 	private static final DeferredRegister.DataComponents DATA_COMPONENTS = DeferredRegister.createDataComponents(Registries.DATA_COMPONENT_TYPE,
 			BotaniaBackpackUpgrades.MOD_ID);

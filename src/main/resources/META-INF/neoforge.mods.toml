@@ -8,7 +8,7 @@ version = "${version}"
 displayName = "${mod_name}"
 logoFile = "logo.png"
 authors = "${mod_author}"
-credits = "Original mod by suiyi (https://github.com/taisuiyileba/Botania-Backpack-Upgrades). NeoForge 1.21.1 port by UnnamedUser12."
+credits = "Original mod by suiyi (https://github.com/taisuiyileba/Botania-Backpack-Upgrades). NeoForge port by UnnamedUser12."
 description = '''${description}'''
 
 [[dependencies.${mod_id}]]
@@ -43,5 +43,5 @@ description = '''${description}'''
     modId = "botania"
     type = "required"
     versionRange = "${botania_version_range}"
-    ordering = "AFTER"
+    ordering = "BEFORE"
     side = "BOTH"

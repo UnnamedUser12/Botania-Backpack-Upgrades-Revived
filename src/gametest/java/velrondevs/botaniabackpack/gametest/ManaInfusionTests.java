@@ -2,40 +2,34 @@ package velrondevs.botaniabackpack.gametest;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.neoforge.gametest.GameTestHolder;
-import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import net.p3pp3rf1y.sophisticatedbackpacks.backpack.BackpackBlockEntity;
 import net.p3pp3rf1y.sophisticatedcore.api.IStorageWrapper;
 import net.p3pp3rf1y.sophisticatedcore.inventory.InventoryHandler;
 import velrondevs.botaniabackpack.BotaniaBackpackUpgrades;
 import velrondevs.botaniabackpack.registry.ModItems;
 
-@GameTestHolder(BotaniaBackpackUpgrades.MOD_ID)
-@PrefixGameTestTemplate(false)
 public final class ManaInfusionTests {
 	private static final String TEMPLATE = "empty";
 	private static final BlockPos BACKPACK = new BlockPos(1, 2, 1);
 	private static final BlockPos BELOW = new BlockPos(1, 1, 1);
 
-	/** iron_ingot -> manasteel_ingot costs 3000 mana and needs no catalyst (botania:mana_infusion/manasteel). */
 	private static final int MANASTEEL_COST = 3_000;
-	/** cobblestone -> sand costs 50 mana and needs the alchemy catalyst. */
+
 	private static final int SAND_COST = 50;
-	/** coal -> 2x coal costs 2100 mana and needs the conjuration catalyst. */
+
 	private static final int COAL_COST = 2_100;
 
 	private static int count(IStorageWrapper wrapper, Item item) {
 		InventoryHandler inventory = wrapper.getInventoryHandler();
 		int total = 0;
-		for (int slot = 0; slot < inventory.getSlots(); slot++) {
+		for (int slot = 0; slot < inventory.size(); slot++) {
 			ItemStack stack = inventory.getStackInSlot(slot);
 			if (stack.is(item)) {
 				total += stack.getCount();
@@ -48,7 +42,7 @@ public final class ManaInfusionTests {
 		ItemStack backpack = withTank ? TestSupport.backpackWithTank(mana) : TestSupport.newBackpack();
 		TestSupport.install(TestSupport.wrapper(backpack), advanced
 				? ModItems.ADVANCED_MANA_INFUSION_UPGRADE.get() : ModItems.MANA_INFUSION_UPGRADE.get());
-		// The infusion filter is an allow list by default (empty = nothing is processed), so the tests whitelist their inputs
+
 		var filterHandler = TestSupport.infusion(TestSupport.wrapper(backpack)).getFilterLogic().getFilterHandler();
 		for (int i = 0; i < allowed.length; i++) {
 			filterHandler.setStackInSlot(i, new ItemStack(allowed[i]));
@@ -57,8 +51,8 @@ public final class ManaInfusionTests {
 	}
 
 	private static void insertAutomatically(IStorageWrapper wrapper, ItemStack stack) {
-		ItemStack remainder = wrapper.getInventoryForInputOutput().insertItem(stack, false);
-		if (!remainder.isEmpty()) {
+		int inserted = net.p3pp3rf1y.sophisticatedcore.util.InventoryHelper.insert(wrapper.getInventoryForInputOutput(), stack);
+		if (inserted < stack.getCount()) {
 			throw new IllegalStateException("Could not insert " + stack);
 		}
 	}
@@ -91,7 +85,6 @@ public final class ManaInfusionTests {
 			helper.assertTrue(count(wrapper, Items.IRON_INGOT) == 3, "3 iron must remain, found " + count(wrapper, Items.IRON_INGOT));
 			helper.assertTrue(TestSupport.tank(wrapper).getMana() == 2_999, "mana left " + TestSupport.tank(wrapper).getMana());
 
-			// Topping the tank up later resumes the pending work without re-inserting
 			TestSupport.tank(wrapper).receiveInternalMana(MANASTEEL_COST * 3);
 			helper.runAfterDelay(10, () -> {
 				helper.assertTrue(count(wrapper, manasteel) == 4, "all converted after refill, got " + count(wrapper, manasteel));
@@ -122,7 +115,7 @@ public final class ManaInfusionTests {
 		ItemStack backpack = backpack(MANASTEEL_COST * 10, false, true);
 		var filter = TestSupport.infusion(TestSupport.wrapper(backpack)).getFilterLogic();
 		filter.setAllowList(true);
-		filter.getFilterHandler().setStackInSlot(0, new ItemStack(Items.GOLD_INGOT)); // only gold is allowed; iron is not
+		filter.getFilterHandler().setStackInSlot(0, new ItemStack(Items.GOLD_INGOT));
 		BackpackBlockEntity be = TestSupport.placeBackpack(helper, BACKPACK, backpack);
 		insertAutomatically(be.getBackpackWrapper(), new ItemStack(Items.IRON_INGOT, 2));
 
@@ -140,8 +133,8 @@ public final class ManaInfusionTests {
 		IStorageWrapper wrapper = be.getBackpackWrapper();
 		InventoryHandler inventory = wrapper.getInventoryHandler();
 		Item manasteel = TestSupport.botaniaItem("manasteel_ingot");
-		// Every slot is full of cobblestone except slot 0, which holds the iron: converting would leave no room for the output
-		for (int slot = 1; slot < inventory.getSlots(); slot++) {
+
+		for (int slot = 1; slot < inventory.size(); slot++) {
 			inventory.setStackInSlot(slot, new ItemStack(Items.COBBLESTONE, 64));
 		}
 		insertAutomaticallyIntoSlot(wrapper, new ItemStack(Items.IRON_INGOT, 2));
@@ -151,7 +144,7 @@ public final class ManaInfusionTests {
 			helper.assertTrue(count(wrapper, Items.IRON_INGOT) == 2, "no iron may be lost, found " + count(wrapper, Items.IRON_INGOT));
 			helper.assertTrue(TestSupport.tank(wrapper).getMana() == MANASTEEL_COST * 3, "no mana may be spent, left " + TestSupport.tank(wrapper).getMana());
 
-			inventory.setStackInSlot(1, ItemStack.EMPTY); // free one slot
+			inventory.setStackInSlot(1, ItemStack.EMPTY);
 			helper.runAfterDelay(10, () -> {
 				helper.assertTrue(count(wrapper, manasteel) == 2, "conversion resumes once there is room, found " + count(wrapper, manasteel));
 				helper.assertTrue(count(wrapper, Items.IRON_INGOT) == 0, "iron consumed");
@@ -162,15 +155,15 @@ public final class ManaInfusionTests {
 	}
 
 	private static void insertAutomaticallyIntoSlot(IStorageWrapper wrapper, ItemStack stack) {
-		ItemStack remainder = wrapper.getInventoryForInputOutput().insertItem(stack, false);
-		if (!remainder.isEmpty()) {
+		int inserted = net.p3pp3rf1y.sophisticatedcore.util.InventoryHelper.insert(wrapper.getInventoryForInputOutput(), stack);
+		if (inserted < stack.getCount()) {
 			throw new IllegalStateException("Could not insert " + stack);
 		}
 	}
 
 	@GameTest(template = TEMPLATE)
 	public static void advancedUpgradeUsesTheAlchemyCatalystBelowThePlacedBackpack(GameTestHelper helper) {
-		Block catalyst = BuiltInRegistries.BLOCK.get(ResourceLocation.fromNamespaceAndPath("botania", "alchemy_catalyst"));
+		Block catalyst = BuiltInRegistries.BLOCK.getValue(Identifier.fromNamespaceAndPath("botania", "alchemy_catalyst"));
 		helper.setBlock(BELOW, catalyst);
 		BackpackBlockEntity be = TestSupport.placeBackpack(helper, BACKPACK, backpack(1_000, true, true, Items.COBBLESTONE));
 		IStorageWrapper wrapper = be.getBackpackWrapper();
@@ -187,14 +180,14 @@ public final class ManaInfusionTests {
 
 	@GameTest(template = TEMPLATE)
 	public static void advancedUpgradeUsesTheConjurationCatalystAndMultipliesTheOutput(GameTestHelper helper) {
-		Block catalyst = BuiltInRegistries.BLOCK.get(ResourceLocation.fromNamespaceAndPath("botania", "conjuration_catalyst"));
+		Block catalyst = BuiltInRegistries.BLOCK.getValue(Identifier.fromNamespaceAndPath("botania", "conjuration_catalyst"));
 		helper.setBlock(BELOW, catalyst);
 		BackpackBlockEntity be = TestSupport.placeBackpack(helper, BACKPACK, backpack(COAL_COST * 2, true, true, Items.COAL));
 		IStorageWrapper wrapper = be.getBackpackWrapper();
 		insertAutomatically(wrapper, new ItemStack(Items.COAL, 2));
 
 		helper.runAfterDelay(15, () -> {
-			// The cloned coal must not be reprocessed as new input: 2 coal in -> exactly 4 coal out, exactly 2 payments
+
 			helper.assertTrue(count(wrapper, Items.COAL) == 4, "2 coal -> 4 coal expected, found " + count(wrapper, Items.COAL));
 			helper.assertTrue(TestSupport.tank(wrapper).getMana() == 0, "mana left " + TestSupport.tank(wrapper).getMana());
 			helper.succeed();
@@ -203,12 +196,12 @@ public final class ManaInfusionTests {
 
 	@GameTest(template = TEMPLATE)
 	public static void catalystRecipesNeedTheAdvancedUpgradeAndTheCatalyst(GameTestHelper helper) {
-		Block catalyst = BuiltInRegistries.BLOCK.get(ResourceLocation.fromNamespaceAndPath("botania", "alchemy_catalyst"));
+		Block catalyst = BuiltInRegistries.BLOCK.getValue(Identifier.fromNamespaceAndPath("botania", "alchemy_catalyst"));
 		helper.setBlock(BELOW, catalyst);
-		// Basic upgrade on top of the catalyst: no catalyst recipes
+
 		BackpackBlockEntity basic = TestSupport.placeBackpack(helper, BACKPACK, backpack(1_000, false, true, Items.COBBLESTONE));
 		insertAutomatically(basic.getBackpackWrapper(), new ItemStack(Items.COBBLESTONE, 4));
-		// Advanced upgrade without a catalyst below
+
 		BackpackBlockEntity noCatalyst = TestSupport.placeBackpack(helper, new BlockPos(2, 2, 1), backpack(1_000, true, true, Items.COBBLESTONE));
 		insertAutomatically(noCatalyst.getBackpackWrapper(), new ItemStack(Items.COBBLESTONE, 4));
 

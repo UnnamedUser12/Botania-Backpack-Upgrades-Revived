@@ -7,16 +7,11 @@ import net.p3pp3rf1y.sophisticatedcore.upgrades.UpgradeType;
 
 import java.util.List;
 
-/**
- * Enables the mana tank in the same backpack as a portable Botania mana
- * source. The actual capability is attached to the backpack stack so Botania
- * can discover it through its normal player-inventory lookup.
- */
 public final class ManaSupplyUpgradeItem extends UpgradeItemBase<ManaSupplyUpgradeWrapper> {
 	public static final UpgradeType<ManaSupplyUpgradeWrapper> TYPE = new UpgradeType<>(ManaSupplyUpgradeWrapper::new);
 
-	public ManaSupplyUpgradeItem(IUpgradeCountLimitConfig upgradeCountLimitConfig) {
-		super(upgradeCountLimitConfig);
+	public ManaSupplyUpgradeItem(IUpgradeCountLimitConfig upgradeCountLimitConfig, Properties properties) {
+		super(upgradeCountLimitConfig, properties);
 	}
 
 	@Override

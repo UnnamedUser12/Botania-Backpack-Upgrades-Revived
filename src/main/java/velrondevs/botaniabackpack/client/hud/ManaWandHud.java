@@ -2,7 +2,7 @@ package velrondevs.botaniabackpack.client.hud;
 
 import velrondevs.botaniabackpack.compat.botania.ManaBackpackPool;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.p3pp3rf1y.sophisticatedbackpacks.backpack.BackpackBlockEntity;
 import velrondevs.botania.api.BotaniaAPIClient;
@@ -17,7 +17,7 @@ public final class ManaWandHud implements WandHUD {
 	}
 
 	@Override
-	public void renderHUD(GuiGraphics gui, Minecraft minecraft) {
+	public void renderHUD(GuiGraphicsExtractor gui, Minecraft minecraft) {
 		ManaBackpackPool.findUpgrade(backpack)
 				.ifPresent(upgrade -> BotaniaAPIClient.instance().drawSimpleManaHUD(gui, MANA_COLOR, upgrade.getMana(), upgrade.getCapacity(),
 						Component.translatable("item.botaniabackpack.mana_tank_upgrade").getString()));

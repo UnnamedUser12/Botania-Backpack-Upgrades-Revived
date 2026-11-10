@@ -2,13 +2,10 @@ package velrondevs.botaniabackpack.gametest;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.neoforge.gametest.GameTestHolder;
-import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import net.p3pp3rf1y.sophisticatedbackpacks.backpack.BackpackBlockEntity;
 import velrondevs.botania.api.BotaniaCapabilities;
 import velrondevs.botania.api.mana.spark.SparkAttachable;
@@ -19,20 +16,17 @@ import velrondevs.botaniabackpack.BotaniaBackpackUpgrades;
 import velrondevs.botaniabackpack.upgrade.ManaTankUpgradeWrapper;
 import velrondevs.botaniabackpack.upgrade.ManaTransferMode;
 
-/** Tests against Botania's own machines (spreader, burst, spark) to prove the backpack really behaves as a mana pool. */
-@GameTestHolder(BotaniaBackpackUpgrades.MOD_ID)
-@PrefixGameTestTemplate(false)
 public final class BotaniaNetworkIntegrationTests {
-	// Spark tests run in their own batches: sparks of every test in range share one network and would exchange mana with each other
+
 	private static final String TEMPLATE = "empty";
 
 	private static Block botaniaBlock(String path) {
-		return BuiltInRegistries.BLOCK.get(ResourceLocation.fromNamespaceAndPath("botania", path));
+		return BuiltInRegistries.BLOCK.getValue(Identifier.fromNamespaceAndPath("botania", path));
 	}
 
 	private static ManaSpreaderBlockEntity placeSpreader(GameTestHelper helper, BlockPos rel) {
 		helper.setBlock(rel, botaniaBlock("mana_spreader"));
-		return (ManaSpreaderBlockEntity) helper.getBlockEntity(rel);
+		return helper.getBlockEntity(rel, ManaSpreaderBlockEntity.class);
 	}
 
 	@GameTest(template = TEMPLATE)
@@ -69,7 +63,6 @@ public final class BotaniaNetworkIntegrationTests {
 		BackpackBlockEntity be = TestSupport.placeBackpack(helper, backpackPos, TestSupport.backpackWithTank(0));
 		ManaSpreaderBlockEntity spreader = placeSpreader(helper, spreaderPos);
 
-		// Find the rotation that aims the beam at the backpack: its beam scan must detect the pool as a receiver
 		boolean aimed = false;
 		for (float rotation : new float[] {0F, 90F, 180F, 270F}) {
 			spreader.setRotationX(rotation);
@@ -119,7 +112,7 @@ public final class BotaniaNetworkIntegrationTests {
 			ManaSparkEntity spark = new ManaSparkEntity(helper.getLevel());
 			spark.setPos(helper.absoluteVec(new net.minecraft.world.phys.Vec3(pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5)));
 			if (receiving) {
-				spark.setUpgrade(velrondevs.botania.api.mana.spark.SparkUpgradeType.DOMINANT); // dominant sparks pull from plain sparks on pools
+				spark.setUpgrade(velrondevs.botania.api.mana.spark.SparkUpgradeType.DOMINANT);
 			}
 			helper.getLevel().addFreshEntity(spark);
 		}

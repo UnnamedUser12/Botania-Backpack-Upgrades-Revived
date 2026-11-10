@@ -6,14 +6,6 @@ import net.minecraft.world.item.ItemStack;
 import velrondevs.botania.api.BotaniaCapabilities;
 import velrondevs.botania.api.mana.ManaItem;
 
-/**
- * Server-side transfers between one mana tank and an item capability.
- *
- * <p>Every transfer observes the target after calling {@link ManaItem#addMana}
- * and only commits the amount the item actually accepted or released. This
- * keeps the tank consistent with capability implementations that clamp values
- * more aggressively than their reported bounds.</p>
- */
 public final class ManaItemTransferHelper {
 	public static int interact(ManaTankUpgradeWrapper tank, ItemStack backpack, ItemStack itemStack, ManaTransferMode mode) {
 		if (backpack.isEmpty() || itemStack.isEmpty() || itemStack.getCount() != 1 || itemStack == backpack) {

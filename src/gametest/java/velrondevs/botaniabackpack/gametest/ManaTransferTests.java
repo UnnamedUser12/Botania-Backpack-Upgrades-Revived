@@ -1,13 +1,10 @@
 package velrondevs.botaniabackpack.gametest;
 
-import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.neoforged.neoforge.gametest.GameTestHolder;
-import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import velrondevs.botania.api.mana.ManaItem;
 import velrondevs.botaniabackpack.BotaniaBackpackUpgrades;
 import velrondevs.botaniabackpack.compat.botania.ManaItemTransferHelper;
@@ -15,8 +12,6 @@ import velrondevs.botaniabackpack.upgrade.ManaTankUpgradeContainer;
 import velrondevs.botaniabackpack.upgrade.ManaTankUpgradeWrapper;
 import velrondevs.botaniabackpack.upgrade.ManaTransferMode;
 
-@GameTestHolder(BotaniaBackpackUpgrades.MOD_ID)
-@PrefixGameTestTemplate(false)
 public final class ManaTransferTests {
 	private static final String TEMPLATE = "empty";
 
@@ -47,7 +42,6 @@ public final class ManaTransferTests {
 		helper.assertTrue(tank.getMana() == 5_100, "tank has " + tank.getMana());
 		helper.assertTrue(tabletMana(tablet) == 0, "tablet has " + tabletMana(tablet));
 
-		// Nothing left to take
 		helper.assertTrue(TestSupport.interact(tank, tablet, ManaTransferMode.INPUT) == 0, "empty tablet moves nothing");
 		helper.succeed();
 	}
@@ -89,7 +83,6 @@ public final class ManaTransferTests {
 		int tabletCapacity = sourceItem.getMaxMana();
 		helper.assertTrue(tabletCapacity > 0, "tablet capacity positive");
 
-		// Fill the tank almost completely, then push more from a tablet than fits
 		tank.receiveInternalMana(capacity - 1_000);
 		sourceItem.addMana(Math.min(tabletCapacity, 5_000));
 		int before = tank.getMana() + tabletMana(source);
@@ -98,7 +91,6 @@ public final class ManaTransferTests {
 		helper.assertTrue(tank.getMana() == capacity, "tank is exactly full");
 		helper.assertTrue(tank.getMana() + tabletMana(source) == before, "mana is conserved on INPUT");
 
-		// Now drain the tank into a tablet that has less room than the tank holds
 		ItemStack almostFull = tablet(0);
 		ManaItem almostFullItem = TestSupport.manaItem(almostFull);
 		int room = 2_500;
@@ -120,7 +112,6 @@ public final class ManaTransferTests {
 		tank.receiveInternalMana(2_000);
 		ManaTankUpgradeContainer container = ManaTankUpgradeContainer.TYPE.create(player, 3, tank);
 
-		// Right click on the bar with an empty tablet in the cursor, mode BOTH: tank -> tablet
 		player.containerMenu.setCarried(tablet(0));
 		CompoundTag click = new CompoundTag();
 		click.putBoolean("cursorInteraction", true);
@@ -128,21 +119,18 @@ public final class ManaTransferTests {
 		helper.assertTrue(tank.getMana() == 0, "tank drained, has " + tank.getMana());
 		helper.assertTrue(tabletMana(player.containerMenu.getCarried()) == 2_000, "carried tablet got the mana");
 
-		// Same click again with a tank in INPUT-only mode and a loaded tablet
 		tank.setTransferMode(ManaTransferMode.INPUT);
 		player.containerMenu.setCarried(tablet(700));
 		container.handlePacket(click);
 		helper.assertTrue(tank.getMana() == 700, "INPUT click fills the tank, has " + tank.getMana());
 		helper.assertTrue(tabletMana(player.containerMenu.getCarried()) == 0, "tablet emptied");
 
-		// OUTPUT mode with a loaded tablet must not touch anything
 		tank.setTransferMode(ManaTransferMode.OUTPUT);
 		player.containerMenu.setCarried(tablet(400));
 		container.handlePacket(click);
 		helper.assertTrue(tabletMana(player.containerMenu.getCarried()) == 1_100 && tank.getMana() == 0,
 				"OUTPUT click moves tank (700) into the 400 tablet: tablet=" + tabletMana(player.containerMenu.getCarried()) + " tank=" + tank.getMana());
 
-		// A non mana item or a stack of several items is ignored
 		player.containerMenu.setCarried(new ItemStack(Items.STICK));
 		container.handlePacket(click);
 		ItemStack two = tablet(100);
@@ -153,7 +141,6 @@ public final class ManaTransferTests {
 		container.handlePacket(click);
 		helper.assertTrue(tank.getMana() == 50, "stack of 2 must be ignored");
 
-		// Transfer-mode message from the GUI button
 		CompoundTag mode = new CompoundTag();
 		mode.putString("transferMode", "input");
 		container.handlePacket(mode);

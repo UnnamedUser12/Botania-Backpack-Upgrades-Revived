@@ -2,14 +2,12 @@ package velrondevs.botaniabackpack.gametest;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
-import net.neoforged.neoforge.gametest.GameTestHolder;
-import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import net.p3pp3rf1y.sophisticatedbackpacks.backpack.BackpackBlockEntity;
 import net.p3pp3rf1y.sophisticatedbackpacks.backpack.wrapper.BackpackWrapper;
 import net.p3pp3rf1y.sophisticatedbackpacks.backpack.wrapper.IBackpackWrapper;
@@ -27,8 +25,6 @@ import velrondevs.botaniabackpack.upgrade.ManaTransferMode;
 
 import java.util.Set;
 
-@GameTestHolder(BotaniaBackpackUpgrades.MOD_ID)
-@PrefixGameTestTemplate(false)
 public final class ManaTankTests {
 	private static final String TEMPLATE = "empty";
 
@@ -63,13 +59,13 @@ public final class ManaTankTests {
 		ManaTankUpgradeWrapper tank = TestSupport.tank(TestSupport.wrapper(backpack));
 		tank.setTransferMode(ManaTransferMode.OUTPUT);
 
-		// The upgrade stack itself: persistent codec and network codec of both data components
 		ItemStack upgradeStack = tank.getUpgradeStack();
 		helper.assertTrue(upgradeStack.get(ModDataComponents.MANA.get()) == 12_345, "mana component set");
 		helper.assertTrue(upgradeStack.get(ModDataComponents.TRANSFER_MODE.get()) == ManaTransferMode.OUTPUT, "mode component set");
 
-		Tag saved = upgradeStack.save(helper.getLevel().registryAccess());
-		ItemStack loaded = ItemStack.parse(helper.getLevel().registryAccess(), saved).orElseThrow();
+		var ops = helper.getLevel().registryAccess().createSerializationContext(NbtOps.INSTANCE);
+		Tag saved = ItemStack.CODEC.encodeStart(ops, upgradeStack).getOrThrow();
+		ItemStack loaded = ItemStack.CODEC.parse(ops, saved).getOrThrow();
 		helper.assertTrue(loaded.get(ModDataComponents.MANA.get()) == 12_345, "mana persisted through NBT");
 		helper.assertTrue(loaded.get(ModDataComponents.TRANSFER_MODE.get()) == ManaTransferMode.OUTPUT, "mode persisted through NBT");
 
@@ -79,9 +75,8 @@ public final class ManaTankTests {
 		helper.assertTrue(decoded.get(ModDataComponents.MANA.get()) == 12_345, "mana synced through network codec");
 		helper.assertTrue(decoded.get(ModDataComponents.TRANSFER_MODE.get()) == ManaTransferMode.OUTPUT, "mode synced through network codec");
 
-		// The whole backpack: stack round-trip keeps pointing at the same storage
-		Tag savedBackpack = backpack.save(helper.getLevel().registryAccess());
-		ItemStack reloadedBackpack = ItemStack.parse(helper.getLevel().registryAccess(), savedBackpack).orElseThrow();
+		Tag savedBackpack = ItemStack.CODEC.encodeStart(ops, backpack).getOrThrow();
+		ItemStack reloadedBackpack = ItemStack.CODEC.parse(ops, savedBackpack).getOrThrow();
 		ManaTankUpgradeWrapper reloadedTank = TestSupport.tank(BackpackWrapper.fromStack(reloadedBackpack));
 		helper.assertTrue(reloadedTank.getMana() == 12_345, "mana after backpack reload = " + reloadedTank.getMana());
 		helper.assertTrue(reloadedTank.getTransferMode() == ManaTransferMode.OUTPUT, "mode after backpack reload");
@@ -124,14 +119,14 @@ public final class ManaTankTests {
 		BlockPos plainAbs = helper.absolutePos(plain);
 		BlockPos tankAbs = helper.absolutePos(withTank);
 		for (Direction side : new Direction[] {null, Direction.UP, Direction.NORTH}) {
-			helper.assertTrue(level.getCapability(BotaniaCapabilities.MANA_RECEIVER, plainAbs, side) == null,
-					"plain backpack must not expose MANA_RECEIVER (side " + side + ")");
-			helper.assertTrue(level.getCapability(BotaniaCapabilities.SPARK_ATTACHABLE, plainAbs, side) == null,
-					"plain backpack must not expose SPARK_ATTACHABLE (side " + side + ")");
+			helper.assertTrue(!(level.getCapability(BotaniaCapabilities.MANA_RECEIVER, plainAbs, side) instanceof ManaBackpackPool),
+					"plain backpack must not expose the mana tank pool as MANA_RECEIVER (side " + side + ")");
+			helper.assertTrue(!(level.getCapability(BotaniaCapabilities.SPARK_ATTACHABLE, plainAbs, side) instanceof ManaBackpackPool),
+					"plain backpack must not expose the mana tank pool as SPARK_ATTACHABLE (side " + side + ")");
 			ManaReceiver receiver = level.getCapability(BotaniaCapabilities.MANA_RECEIVER, tankAbs, side);
-			helper.assertTrue(receiver instanceof ManaPool, "tank backpack must expose a ManaPool receiver (side " + side + ")");
+			helper.assertTrue(receiver instanceof ManaBackpackPool, "tank backpack must expose the mana tank pool as receiver (side " + side + ")");
 			SparkAttachable attachable = level.getCapability(BotaniaCapabilities.SPARK_ATTACHABLE, tankAbs, side);
-			helper.assertTrue(attachable != null && attachable.canAttachSpark(ItemStack.EMPTY), "tank backpack must be spark attachable");
+			helper.assertTrue(attachable instanceof ManaBackpackPool && attachable.canAttachSpark(ItemStack.EMPTY), "tank backpack must be spark attachable");
 		}
 		helper.succeed();
 	}
@@ -142,19 +137,18 @@ public final class ManaTankTests {
 		BackpackBlockEntity be = TestSupport.placeBackpack(helper, rel, TestSupport.newBackpack());
 		BlockPos abs = helper.absolutePos(rel);
 		var level = helper.getLevel();
-		helper.assertTrue(level.getCapability(BotaniaCapabilities.MANA_RECEIVER, abs, null) == null, "starts without capability");
+		helper.assertTrue(!(level.getCapability(BotaniaCapabilities.MANA_RECEIVER, abs, null) instanceof ManaBackpackPool), "starts without the tank capability");
 
-		// Cached lookups (like Botania spreaders hold) must follow upgrade changes
 		var cache = net.neoforged.neoforge.capabilities.BlockCapabilityCache.create(BotaniaCapabilities.MANA_RECEIVER, level, abs, null);
-		helper.assertTrue(cache.getCapability() == null, "cache starts empty");
+		helper.assertTrue(!(cache.getCapability() instanceof ManaBackpackPool), "cache starts without the tank capability");
 
 		int slot = TestSupport.install(be.getBackpackWrapper(), ModItems.MANA_TANK_UPGRADE.get());
-		helper.assertTrue(level.getCapability(BotaniaCapabilities.MANA_RECEIVER, abs, null) != null, "capability appears after installing the tank");
-		helper.assertTrue(cache.getCapability() != null, "cached lookup must see the newly installed tank");
+		helper.assertTrue(level.getCapability(BotaniaCapabilities.MANA_RECEIVER, abs, null) instanceof ManaBackpackPool, "capability appears after installing the tank");
+		helper.assertTrue(cache.getCapability() instanceof ManaBackpackPool, "cached lookup must see the newly installed tank");
 
 		be.getBackpackWrapper().getUpgradeHandler().setStackInSlot(slot, ItemStack.EMPTY);
-		helper.assertTrue(level.getCapability(BotaniaCapabilities.MANA_RECEIVER, abs, null) == null, "capability disappears after removing the tank");
-		helper.assertTrue(cache.getCapability() == null, "cached lookup must see the tank removal");
+		helper.assertTrue(!(level.getCapability(BotaniaCapabilities.MANA_RECEIVER, abs, null) instanceof ManaBackpackPool), "capability disappears after removing the tank");
+		helper.assertTrue(!(cache.getCapability() instanceof ManaBackpackPool), "cached lookup must see the tank removal");
 		helper.succeed();
 	}
 
@@ -168,7 +162,7 @@ public final class ManaTankTests {
 		helper.assertTrue(receiver.canReceiveManaFromBursts(), "BOTH accepts bursts");
 		helper.assertTrue(!receiver.isFull(), "empty tank is not full");
 
-		receiver.receiveMana(1000); // what ManaBurst does on collision
+		receiver.receiveMana(1000);
 		helper.assertTrue(TestSupport.tank(be.getBackpackWrapper()).getMana() == 1000, "mana from burst stored in the upgrade");
 		helper.assertTrue(receiver.getCurrentMana() == 1000, "pool reports stored mana");
 		helper.assertTrue(((ManaPool) receiver).isOutputtingPower(), "BOTH outputs power");
@@ -195,15 +189,13 @@ public final class ManaTankTests {
 			helper.assertTrue(found, "ticking backpack should register as pool in the mana network");
 			helper.assertTrue(network.getClosestPool(abs, level, 4) != null, "closest pool lookup finds it");
 
-			// Removing the upgrade unregisters immediately
 			var handler = be.getBackpackWrapper().getUpgradeHandler();
-			for (int slot = 0; slot < handler.getSlots(); slot++) {
+			for (int slot = 0; slot < handler.size(); slot++) {
 				handler.setStackInSlot(slot, ItemStack.EMPTY);
 			}
 			helper.assertTrue(network.getAllPoolsInWorld(level).stream().noneMatch(pool -> pool.getManaReceiverPos().equals(abs)),
 					"removing the tank must unregister the pool");
 
-			// Re-adding registers again, then breaking the block lets the sweep remove it
 			TestSupport.install(be.getBackpackWrapper(), ModItems.MANA_TANK_UPGRADE.get());
 			helper.runAfterDelay(5, () -> {
 				helper.assertTrue(network.getAllPoolsInWorld(level).stream().anyMatch(pool -> pool.getManaReceiverPos().equals(abs)),

@@ -11,6 +11,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.p3pp3rf1y.sophisticatedcore.api.IStorageWrapper;
+import net.p3pp3rf1y.sophisticatedcore.renderdata.RenderData;
 import net.p3pp3rf1y.sophisticatedcore.upgrades.IRenderedTankUpgrade;
 import net.p3pp3rf1y.sophisticatedcore.upgrades.ITickableUpgrade;
 import net.p3pp3rf1y.sophisticatedcore.upgrades.UpgradeWrapperBase;
@@ -21,7 +22,7 @@ import java.util.function.Consumer;
 
 public final class ManaTankUpgradeWrapper extends UpgradeWrapperBase<ManaTankUpgradeWrapper, ManaTankUpgradeItem>
 		implements IRenderedTankUpgrade, ITickableUpgrade {
-	private Consumer<TankRenderInfo> renderInfoUpdate = ignored -> {};
+	private Consumer<RenderData.TankRenderData> renderInfoUpdate = ignored -> {};
 
 	public ManaTankUpgradeWrapper(IStorageWrapper storageWrapper, ItemStack upgrade, Consumer<ItemStack> upgradeSaveHandler) {
 		super(storageWrapper, upgrade, upgradeSaveHandler);
@@ -37,7 +38,6 @@ public final class ManaTankUpgradeWrapper extends UpgradeWrapperBase<ManaTankUpg
 		return upgrade.getOrDefault(ModDataComponents.MANA.get(), 0);
 	}
 
-	/** Mana is always read straight from the upgrade stack so it can never diverge from the stored data. */
 	public int getMana() {
 		return getStoredMana(upgrade);
 	}
@@ -71,12 +71,6 @@ public final class ManaTankUpgradeWrapper extends UpgradeWrapperBase<ManaTankUpg
 		setMana(ManaStorageMath.applyDelta(getMana(), amount, getCapacity()));
 	}
 
-	/**
-	 * Stores as much of the supplied mana as possible without consulting the
-	 * external network transfer mode.
-	 *
-	 * @return the amount actually stored
-	 */
 	public int receiveInternalMana(int maxAmount) {
 		if (maxAmount <= 0) {
 			return 0;
@@ -88,12 +82,6 @@ public final class ManaTankUpgradeWrapper extends UpgradeWrapperBase<ManaTankUpg
 		return accepted;
 	}
 
-	/**
-	 * Extracts up to the requested amount without consulting the external
-	 * network transfer mode.
-	 *
-	 * @return the amount actually extracted
-	 */
 	public int extractInternalMana(int maxAmount) {
 		if (maxAmount <= 0) {
 			return 0;
@@ -106,11 +94,6 @@ public final class ManaTankUpgradeWrapper extends UpgradeWrapperBase<ManaTankUpg
 		return extracted;
 	}
 
-	/**
-	 * Consumes mana for another upgrade in this backpack. Transfer mode only
-	 * controls external Botania network I/O, so it intentionally does not block
-	 * this internal use.
-	 */
 	public boolean tryConsumeMana(int amount) {
 		if (amount <= 0 || getMana() < amount) {
 			return false;
@@ -118,13 +101,6 @@ public final class ManaTankUpgradeWrapper extends UpgradeWrapperBase<ManaTankUpg
 		return extractInternalMana(amount) == amount;
 	}
 
-	/**
-	 * Transfers mana between this tank and a single mana-holding cursor item.
-	 * The current transfer mode resolves direction ambiguity for items that can
-	 * both receive and export.
-	 *
-	 * @return the amount transferred, or zero if no compatible transfer exists
-	 */
 	public int interactWithManaItem(ItemStack itemStack) {
 		return ManaItemTransferHelper.interact(this, storageWrapper.getWrappedStorageStack(), itemStack, getTransferMode());
 	}
@@ -142,24 +118,24 @@ public final class ManaTankUpgradeWrapper extends UpgradeWrapperBase<ManaTankUpg
 	}
 
 	@Override
-	public void setTankRenderInfoUpdateCallback(Consumer<TankRenderInfo> updateTankRenderInfoCallback) {
-		renderInfoUpdate = updateTankRenderInfoCallback;
+	public void setTankRenderDataUpdateCallback(Consumer<RenderData.TankRenderData> updateTankRenderDataCallback) {
+		renderInfoUpdate = updateTankRenderDataCallback;
 	}
 
 	@Override
-	public void forceUpdateTankRenderInfo() {
-		TankRenderInfo renderInfo = new TankRenderInfo();
+	public void forceUpdateTankRenderData() {
 		int mana = getMana();
 		if (mana > 0) {
-			renderInfo.setFluid(new FluidStack(ModFluids.MANA_DISPLAY.get(), 1));
-			renderInfo.setFillRatio(Math.round((float) mana / getCapacity() * 10F) / 10F);
+			renderInfoUpdate.accept(new RenderData.TankRenderData(new FluidStack(ModFluids.MANA_DISPLAY.get(), 1),
+					Math.round((float) mana / getCapacity() * 10F) / 10F));
+		} else {
+			renderInfoUpdate.accept(new RenderData.TankRenderData(FluidStack.EMPTY, 0F));
 		}
-		renderInfoUpdate.accept(renderInfo);
 	}
 
 	@Override
 	public void tick(@Nullable Entity entity, Level level, BlockPos pos) {
-		if (entity == null && !level.isClientSide) {
+		if (entity == null && !level.isClientSide()) {
 			ManaBackpackPool.tickPlacedBackpack(level, pos, this);
 		}
 	}
@@ -185,6 +161,6 @@ public final class ManaTankUpgradeWrapper extends UpgradeWrapperBase<ManaTankUpg
 		}
 		upgrade.set(ModDataComponents.MANA.get(), clampedMana);
 		save();
-		forceUpdateTankRenderInfo();
+		forceUpdateTankRenderData();
 	}
 }

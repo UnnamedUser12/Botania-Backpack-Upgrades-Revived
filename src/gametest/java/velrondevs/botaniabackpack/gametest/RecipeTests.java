@@ -1,17 +1,14 @@
 package velrondevs.botaniabackpack.gametest;
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.CraftingRecipe;
-import net.neoforged.neoforge.gametest.GameTestHolder;
-import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import velrondevs.botaniabackpack.BotaniaBackpackUpgrades;
 import velrondevs.botaniabackpack.registry.ModDataComponents;
 import velrondevs.botaniabackpack.registry.ModItems;
@@ -20,13 +17,11 @@ import velrondevs.botaniabackpack.upgrade.ManaTransferMode;
 import java.util.List;
 import java.util.Optional;
 
-@GameTestHolder(BotaniaBackpackUpgrades.MOD_ID)
-@PrefixGameTestTemplate(false)
 public final class RecipeTests {
 	private static final String TEMPLATE = "empty";
 
 	private static Item sb(String path) {
-		return BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath("sophisticatedbackpacks", path));
+		return BuiltInRegistries.ITEM.getValue(Identifier.fromNamespaceAndPath("sophisticatedbackpacks", path));
 	}
 
 	private static Item bot(String path) {
@@ -39,9 +34,9 @@ public final class RecipeTests {
 
 	private static ItemStack craftStacks(GameTestHelper helper, List<ItemStack> grid) {
 		CraftingInput input = CraftingInput.of(3, 3, grid);
-		Optional<RecipeHolder<CraftingRecipe>> recipe = helper.getLevel().getRecipeManager().getRecipeFor(RecipeType.CRAFTING, input, helper.getLevel());
+		Optional<RecipeHolder<CraftingRecipe>> recipe = helper.getLevel().recipeAccess().getRecipeFor(RecipeType.CRAFTING, input, helper.getLevel());
 		helper.assertTrue(recipe.isPresent(), "no crafting recipe matched the grid");
-		return recipe.get().value().assemble(input, helper.getLevel().registryAccess());
+		return recipe.get().value().assemble(input);
 	}
 
 	@GameTest(template = TEMPLATE)
@@ -92,7 +87,7 @@ public final class RecipeTests {
 	@GameTest(template = TEMPLATE)
 	public static void upgradesAreInTheSophisticatedUpgradeTag(GameTestHelper helper) {
 		var tag = net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM,
-				ResourceLocation.fromNamespaceAndPath("sophisticatedbackpacks", "upgrade"));
+				Identifier.fromNamespaceAndPath("sophisticatedbackpacks", "upgrade"));
 		for (var upgrade : List.of(ModItems.MANA_TANK_UPGRADE, ModItems.MANA_SUPPLY_UPGRADE, ModItems.MANA_INFUSION_UPGRADE,
 				ModItems.ADVANCED_MANA_INFUSION_UPGRADE)) {
 			helper.assertTrue(new ItemStack(upgrade.get()).is(tag), upgrade.getId() + " must be tagged sophisticatedbackpacks:upgrade");

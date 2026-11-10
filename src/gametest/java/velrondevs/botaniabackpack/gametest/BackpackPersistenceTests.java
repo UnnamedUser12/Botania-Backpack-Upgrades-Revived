@@ -1,7 +1,6 @@
 package velrondevs.botaniabackpack.gametest;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -14,8 +13,6 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.core.Direction;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.gametest.GameTestHolder;
-import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import net.p3pp3rf1y.sophisticatedbackpacks.backpack.BackpackBlockEntity;
 import net.p3pp3rf1y.sophisticatedbackpacks.backpack.wrapper.BackpackWrapper;
 import velrondevs.botaniabackpack.BotaniaBackpackUpgrades;
@@ -23,8 +20,6 @@ import velrondevs.botaniabackpack.upgrade.ManaTransferMode;
 
 import java.util.List;
 
-@GameTestHolder(BotaniaBackpackUpgrades.MOD_ID)
-@PrefixGameTestTemplate(false)
 public final class BackpackPersistenceTests {
 	private static final String TEMPLATE = "empty";
 
@@ -36,7 +31,7 @@ public final class BackpackPersistenceTests {
 		ItemStack backpack = TestSupport.backpackWithTank(54_321);
 		TestSupport.tank(TestSupport.wrapper(backpack)).setTransferMode(ManaTransferMode.INPUT);
 		player.setItemInHand(InteractionHand.MAIN_HAND, backpack);
-		player.setShiftKeyDown(true); // backpacks only place while sneaking
+		player.setShiftKeyDown(true);
 
 		BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(helper.absolutePos(floor)).add(0, 0.5, 0), Direction.UP, helper.absolutePos(floor), false);
 		InteractionResult result = backpack.useOn(new UseOnContext(helper.getLevel(), player, InteractionHand.MAIN_HAND, backpack, hit));
@@ -58,7 +53,7 @@ public final class BackpackPersistenceTests {
 		var tag = be.saveWithFullMetadata(registries);
 		BlockEntity loaded = BlockEntity.loadStatic(helper.absolutePos(rel), be.getBlockState(), tag, registries);
 		helper.assertTrue(loaded instanceof BackpackBlockEntity, "reloaded as backpack block entity");
-		// Sophisticated Backpacks 3.26 resolves the stored backpack when the block entity is attached to a level (onLoad)
+
 		loaded.setLevel(helper.getLevel());
 		loaded.onLoad();
 		var tank = TestSupport.tank(((BackpackBlockEntity) loaded).getBackpackWrapper());
@@ -87,16 +82,16 @@ public final class BackpackPersistenceTests {
 		ItemStack backpack = TestSupport.backpackWithTank(900);
 		var handler = TestSupport.wrapper(backpack).getUpgradeHandler();
 		int slot = -1;
-		for (int i = 0; i < handler.getSlots(); i++) {
+		for (int i = 0; i < handler.size(); i++) {
 			if (!handler.getStackInSlot(i).isEmpty()) {
 				slot = i;
 			}
 		}
-		ItemStack taken = handler.extractItem(slot, 1, false);
+		ItemStack taken = TestSupport.extractUpgrade(handler, slot);
 		helper.assertTrue(!taken.isEmpty(), "upgrade extracted");
 		helper.assertTrue(taken.getOrDefault(velrondevs.botaniabackpack.registry.ModDataComponents.MANA.get(), 0) == 900,
 				"the taken upgrade item carries the mana in its data component");
-		handler.insertItem(slot, taken, false);
+		TestSupport.insertUpgrade(handler, slot, taken);
 		helper.assertTrue(TestSupport.tank(TestSupport.wrapper(backpack)).getMana() == 900, "mana is back after reinsertion");
 		helper.succeed();
 	}

@@ -2,19 +2,22 @@ package velrondevs.botaniabackpack.upgrade;
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.crafting.RecipeHolder;
-import net.p3pp3rf1y.sophisticatedcore.init.ModCoreDataComponents;
+import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.transfer.item.ItemResource;
+import net.neoforged.neoforge.transfer.transaction.SnapshotJournal;
+import net.neoforged.neoforge.transfer.transaction.Transaction;
+import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 import net.p3pp3rf1y.sophisticatedcore.api.ISlotChangeResponseUpgrade;
 import net.p3pp3rf1y.sophisticatedcore.api.IStorageWrapper;
-import net.p3pp3rf1y.sophisticatedcore.inventory.IItemHandlerSimpleInserter;
+import net.p3pp3rf1y.sophisticatedcore.init.ModCoreDataComponents;
 import net.p3pp3rf1y.sophisticatedcore.inventory.InventoryHandler;
 import net.p3pp3rf1y.sophisticatedcore.upgrades.FilterLogic;
 import net.p3pp3rf1y.sophisticatedcore.upgrades.IExtractResponseUpgrade;
@@ -22,7 +25,7 @@ import net.p3pp3rf1y.sophisticatedcore.upgrades.IFilteredUpgrade;
 import net.p3pp3rf1y.sophisticatedcore.upgrades.IInsertResponseUpgrade;
 import net.p3pp3rf1y.sophisticatedcore.upgrades.ITickableUpgrade;
 import net.p3pp3rf1y.sophisticatedcore.upgrades.UpgradeWrapperBase;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import velrondevs.botania.api.recipe.ManaInfusionRecipe;
 import velrondevs.botania.api.recipe.StateIngredient;
@@ -33,19 +36,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/**
- * Converts inventory inputs through Botania mana-infusion recipes. Work is
- * queued by inventory events so outputs of cyclic and conjuration recipes are
- * never mistaken for fresh inputs.
- */
 public final class ManaInfusionUpgradeWrapper extends UpgradeWrapperBase<ManaInfusionUpgradeWrapper, ManaInfusionUpgradeItem>
 		implements IInsertResponseUpgrade, IExtractResponseUpgrade, IFilteredUpgrade, ISlotChangeResponseUpgrade, ITickableUpgrade {
 	private static final Logger LOGGER = LogUtils.getLogger();
-	
 
 	private final FilterLogic filterLogic;
 	private final Map<Integer, PendingInfusion> pendingInfusions = new LinkedHashMap<>();
 	private final Map<Integer, AutomaticInsertBaseline> automaticInsertBaselines = new LinkedHashMap<>();
+	private final InsertionJournal insertionJournal = new InsertionJournal();
 	private boolean initialInventoryScanPending = true;
 	private boolean processing;
 
@@ -74,41 +72,57 @@ public final class ManaInfusionUpgradeWrapper extends UpgradeWrapperBase<ManaInf
 	}
 
 	@Override
-	public ItemStack onBeforeInsert(InventoryHandler inventoryHandler, int slot, ItemStack stack, boolean simulate) {
-		if (!simulate && !processing) {
-			automaticInsertBaselines.put(slot,
-					new AutomaticInsertBaseline(stack.copyWithCount(1), inventoryHandler.getStackInSlot(slot).getCount()));
+	public int onBeforeInsert(InventoryHandler inventoryHandler, int slot, ItemResource resource, int amount) {
+		if (!processing) {
+			automaticInsertBaselines.put(slot, new AutomaticInsertBaseline(resource, inventoryHandler.getStackInSlot(slot).getCount()));
 		}
-		return stack;
+		return 0;
 	}
 
 	@Override
-	public void onAfterInsert(IItemHandlerSimpleInserter inventoryHandler, int slot) {
+	public void onAfterInsert(InventoryHandler inventoryHandler, int slot, TransactionContext tx) {
 		if (processing) {
 			return;
 		}
 		AutomaticInsertBaseline baseline = automaticInsertBaselines.remove(slot);
 		ItemStack current = inventoryHandler.getStackInSlot(slot);
-		if (baseline == null || current.isEmpty() || !ItemStack.isSameItemSameComponents(baseline.input(), current)) {
-			queueSlot(inventoryHandler, slot);
+		if (baseline == null || current.isEmpty() || !baseline.input().matches(current)) {
+			deferUntilCommit(tx, () -> queueSlot(inventoryHandler, slot));
 			return;
 		}
 
 		int insertedCount = current.getCount() - baseline.countBefore();
 		if (insertedCount > 0) {
-			queueInsertedItems(slot, current, insertedCount);
+			ItemStack inserted = current.copy();
+			deferUntilCommit(tx, () -> queueInsertedItems(slot, inserted, insertedCount));
 		}
 	}
 
 	@Override
-	public void onAfterExtract(IItemHandlerSimpleInserter inventoryHandler, int slot, ItemStack originalContents) {
-		if (!processing && pendingInfusions.containsKey(slot)) {
+	@SuppressWarnings("deprecation")
+	public void onAfterExtract(InventoryHandler inventoryHandler, int slot, ItemResource originalResource) {
+		if (processing || !pendingInfusions.containsKey(slot)) {
+			return;
+		}
+		TransactionContext tx = Transaction.getCurrentOpenedTransaction();
+		if (tx == null) {
 			reconcilePendingSlot(inventoryHandler, slot);
+		} else {
+			deferUntilCommit(tx, () -> {
+				if (pendingInfusions.containsKey(slot)) {
+					reconcilePendingSlot(inventoryHandler, slot);
+				}
+			});
 		}
 	}
 
+	private void deferUntilCommit(TransactionContext tx, Runnable action) {
+		insertionJournal.updateSnapshots(tx);
+		insertionJournal.actions.add(action);
+	}
+
 	@Override
-	public void onSlotChange(IItemHandler inventoryHandler, int slot) {
+	public void onSlotChange(InventoryHandler inventoryHandler, int slot) {
 		if (shouldWorkInGUI()) {
 			queueSlot(inventoryHandler, slot);
 		}
@@ -138,13 +152,13 @@ public final class ManaInfusionUpgradeWrapper extends UpgradeWrapperBase<ManaInf
 			return;
 		}
 		InventoryHandler inventory = storageWrapper.getInventoryHandler();
-		for (int slot = 0; slot < inventory.getSlots(); slot++) {
+		for (int slot = 0; slot < inventory.size(); slot++) {
 			queueSlot(inventory, slot);
 		}
 	}
 
-	private void queueSlot(IItemHandler inventory, int slot) {
-		if (processing || slot < 0 || slot >= inventory.getSlots()) {
+	private void queueSlot(InventoryHandler inventory, int slot) {
+		if (processing || slot < 0 || slot >= inventory.size()) {
 			return;
 		}
 
@@ -183,7 +197,7 @@ public final class ManaInfusionUpgradeWrapper extends UpgradeWrapperBase<ManaInf
 		pending.setLastObservedCount(stack.getCount());
 	}
 
-	private void reconcilePendingSlot(IItemHandler inventory, int slot) {
+	private void reconcilePendingSlot(InventoryHandler inventory, int slot) {
 		PendingInfusion pending = pendingInfusions.get(slot);
 		if (pending == null) {
 			return;
@@ -203,7 +217,7 @@ public final class ManaInfusionUpgradeWrapper extends UpgradeWrapperBase<ManaInf
 
 	@Override
 	public void tick(@Nullable Entity entity, Level level, BlockPos pos) {
-		if (level.isClientSide) {
+		if (level.isClientSide()) {
 			return;
 		}
 		if (initialInventoryScanPending) {
@@ -281,52 +295,33 @@ public final class ManaInfusionUpgradeWrapper extends UpgradeWrapperBase<ManaInf
 
 		if (entity instanceof Player player) {
 			player.triggerRecipeCrafted(holder, List.of(output));
-			output.onCraftedBy(level, player, output.getCount());
+			output.onCraftedBy(player, output.getCount());
 		}
 	}
 
 	private boolean applyConversion(InventoryHandler inventory, int slot, ItemStack input, ItemStack output,
 			ManaTankUpgradeWrapper manaTank, int manaCost, RecipeHolder<ManaInfusionRecipe> holder) {
-		ItemStack remainingInput = input.copy();
-		remainingInput.shrink(1);
-		if (!canFitOutputAfterConsumingInput(inventory, slot, remainingInput, output)) {
-			return false;
-		}
+		ItemResource inputResource = ItemResource.of(input);
+		ItemResource outputResource = ItemResource.of(output);
+		int outputCount = output.getCount();
 
 		processing = true;
-		try {
-			inventory.setStackInSlot(slot, remainingInput);
-			ItemStack uninserted = inventory.insertItem(output.copy(), false);
-			if (!uninserted.isEmpty()) {
-				LOGGER.error("Mana infusion recipe {} passed output-space validation but left {} items during insertion; input was already consumed",
-						holder.id(), uninserted.getCount());
+		try (Transaction tx = Transaction.openRoot()) {
+			if (inventory.extract(slot, inputResource, 1, tx) < 1) {
+				return false;
+			}
+			if (inventory.insert(outputResource, outputCount, tx) < outputCount) {
 				return false;
 			}
 			if (!manaTank.tryConsumeMana(manaCost)) {
 				LOGGER.error("Mana infusion recipe {} completed but its previously available {} mana could not be consumed", holder.id(), manaCost);
 				return false;
 			}
+			tx.commit();
 			return true;
 		} finally {
 			processing = false;
 		}
-	}
-
-	private static boolean canFitOutputAfterConsumingInput(InventoryHandler inventory, int inputSlot, ItemStack remainingInput, ItemStack output) {
-		long remainingOutput = output.getCount();
-		for (int slot = 0; slot < inventory.getSlots() && remainingOutput > 0; slot++) {
-			ItemStack existing = slot == inputSlot ? remainingInput : inventory.getStackInSlot(slot);
-			if (!inventory.isItemValid(slot, output)) {
-				continue;
-			}
-
-			if (existing.isEmpty()) {
-				remainingOutput -= inventory.getStackLimit(slot, output);
-			} else if (ItemStack.isSameItemSameComponents(existing, output)) {
-				remainingOutput -= Math.max(0, inventory.getStackLimit(slot, output) - existing.getCount());
-			}
-		}
-		return remainingOutput <= 0;
 	}
 
 	@Nullable
@@ -344,7 +339,10 @@ public final class ManaInfusionUpgradeWrapper extends UpgradeWrapperBase<ManaInf
 
 		RecipeHolder<ManaInfusionRecipe> nonCatalystRecipe = null;
 		boolean hasUnmatchedCatalystRecipe = false;
-		for (RecipeHolder<ManaInfusionRecipe> holder : level.getRecipeManager().getAllRecipesFor(recipeType)) {
+		if (!(level instanceof ServerLevel serverLevel)) {
+			return RecipeLookup.NO_MATCH;
+		}
+		for (RecipeHolder<ManaInfusionRecipe> holder : serverLevel.recipeAccess().recipeMap().byType(recipeType)) {
 			ManaInfusionRecipe recipe = holder.value();
 			if (!recipe.matches(input)) {
 				continue;
@@ -372,7 +370,7 @@ public final class ManaInfusionUpgradeWrapper extends UpgradeWrapperBase<ManaInf
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	@Nullable
 	private static RecipeType<ManaInfusionRecipe> getManaInfusionRecipeType() {
-		RecipeType<?> recipeType = BuiltInRegistries.RECIPE_TYPE.get(ManaInfusionRecipe.TYPE_ID);
+		RecipeType<?> recipeType = BuiltInRegistries.RECIPE_TYPE.getValue(ManaInfusionRecipe.TYPE_ID);
 		return recipeType == null ? null : (RecipeType) recipeType;
 	}
 
@@ -381,7 +379,28 @@ public final class ManaInfusionUpgradeWrapper extends UpgradeWrapperBase<ManaInf
 		private static final RecipeLookup RETRY = new RecipeLookup(null, true);
 	}
 
-	private record AutomaticInsertBaseline(ItemStack input, int countBefore) {}
+	private final class InsertionJournal extends SnapshotJournal<List<Runnable>> {
+		private List<Runnable> actions = new ArrayList<>();
+
+		@Override
+		protected List<Runnable> createSnapshot() {
+			return new ArrayList<>(actions);
+		}
+
+		@Override
+		protected void revertToSnapshot(List<Runnable> snapshot) {
+			actions = snapshot;
+		}
+
+		@Override
+		protected void onRootCommit(List<Runnable> originalState) {
+			List<Runnable> committed = actions;
+			actions = new ArrayList<>();
+			committed.forEach(Runnable::run);
+		}
+	}
+
+	private record AutomaticInsertBaseline(ItemResource input, int countBefore) {}
 
 	private static final class PendingInfusion {
 		private final ItemStack input;

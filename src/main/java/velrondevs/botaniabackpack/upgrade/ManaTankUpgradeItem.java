@@ -13,8 +13,8 @@ public final class ManaTankUpgradeItem extends UpgradeItemBase<ManaTankUpgradeWr
 
 	private final IntSupplier capacitySupplier;
 
-	public ManaTankUpgradeItem(IntSupplier capacitySupplier, IUpgradeCountLimitConfig upgradeCountLimitConfig) {
-		super(upgradeCountLimitConfig);
+	public ManaTankUpgradeItem(IntSupplier capacitySupplier, IUpgradeCountLimitConfig upgradeCountLimitConfig, Properties properties) {
+		super(upgradeCountLimitConfig, properties);
 		this.capacitySupplier = capacitySupplier;
 	}
 

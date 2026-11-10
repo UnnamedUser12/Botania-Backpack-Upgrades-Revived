@@ -3,11 +3,13 @@ package velrondevs.botaniabackpack.client.gui;
 import velrondevs.botaniabackpack.registry.ModFluids;
 import velrondevs.botaniabackpack.upgrade.ManaTankUpgradeContainer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.block.FluidModel;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.inventory.InventoryMenu;
-import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
+import net.minecraft.world.level.material.FluidState;
+import net.neoforged.neoforge.client.fluid.FluidTintSource;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.p3pp3rf1y.sophisticatedcore.client.gui.StorageScreenBase;
 import net.p3pp3rf1y.sophisticatedcore.client.gui.UpgradeInventoryControlBase;
@@ -39,13 +41,13 @@ public final class ManaTankInventoryControl extends UpgradeInventoryControlBase 
 	}
 
 	@Override
-	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-		renderTankBackground(guiGraphics);
-		renderMana(guiGraphics);
-		renderTankOverlay(guiGraphics);
+	public void extract(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+		extractTankBackground(guiGraphics);
+		extractMana(guiGraphics);
+		extractTankOverlay(guiGraphics);
 	}
 
-	private void renderTankBackground(GuiGraphics guiGraphics) {
+	private void extractTankBackground(GuiGraphicsExtractor guiGraphics) {
 		GuiHelper.blit(guiGraphics, getTankLeft(), position.y(), GuiHelper.BAR_BACKGROUND_TOP, 18, height < 36 ? height / 2 : 18);
 		int yOffset = 18;
 		for (int i = 0; i < (height - 36) / 18; i++) {
@@ -56,28 +58,27 @@ public final class ManaTankInventoryControl extends UpgradeInventoryControlBase 
 				height < 36 ? height / 2 : 18);
 	}
 
-	private void renderTankOverlay(GuiGraphics guiGraphics) {
-		guiGraphics.pose().pushPose();
-		guiGraphics.pose().translate(0, 0, 100);
+	private void extractTankOverlay(GuiGraphicsExtractor guiGraphics) {
 		for (int i = 0, yOffset = 0; i < height / 18; i++, yOffset += 18) {
 			GuiHelper.blit(guiGraphics, getTankLeft() + 1, position.y() + yOffset, OVERLAY);
 		}
-		guiGraphics.pose().popPose();
 	}
 
-	private void renderMana(GuiGraphics guiGraphics) {
+	private void extractMana(GuiGraphicsExtractor guiGraphics) {
 		int mana = container.getMana();
 		if (mana <= 0) {
 			return;
 		}
 		int displayHeight = Math.max(1, Math.round((height - 2) * ((float) mana / container.getCapacity())));
 		FluidStack displayFluid = new FluidStack(ModFluids.MANA_DISPLAY.get(), 1);
-		IClientFluidTypeExtensions properties = IClientFluidTypeExtensions.of(displayFluid.getFluid());
-		TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
-				.apply(properties.getStillTexture(displayFluid));
+		FluidState fluidState = displayFluid.getFluid().defaultFluidState();
+		FluidModel fluidModel = Minecraft.getInstance().getModelManager().getFluidStateModelSet().get(fluidState);
+		TextureAtlasSprite sprite = fluidModel.stillMaterial().sprite();
+		int color = fluidModel.tintSource() instanceof FluidTintSource fluidTintSource
+				? fluidTintSource.colorAsStack(displayFluid)
+				: fluidModel.tintSource() != null ? fluidModel.tintSource().color(fluidState.createLegacyBlock()) : -1;
 		int fluidY = position.y() + height - 1 - displayHeight;
-		GuiHelper.renderTiledFluidTextureAtlas(guiGraphics, sprite, properties.getTintColor(displayFluid), position.x() + 10, fluidY,
-				displayHeight);
+		GuiHelper.renderTiledSprite(guiGraphics, sprite, color, position.x() + 10, fluidY, displayHeight);
 	}
 
 	private int getTankLeft() {
@@ -85,8 +86,8 @@ public final class ManaTankInventoryControl extends UpgradeInventoryControlBase 
 	}
 
 	@Override
-	public boolean handleMouseReleased(double mouseX, double mouseY, int button) {
-		if (button != 1 || !isMouseOverTank(mouseX, mouseY)) {
+	public boolean handleMouseReleased(MouseButtonEvent event) {
+		if (event.button() != 1 || !isMouseOverTank(event.x(), event.y())) {
 			return false;
 		}
 
@@ -100,19 +101,19 @@ public final class ManaTankInventoryControl extends UpgradeInventoryControlBase 
 	}
 
 	@Override
-	public void renderErrorOverlay(GuiGraphics guiGraphics) {
-		screen.renderOverlay(guiGraphics, StorageScreenBase.ERROR_SLOT_COLOR, getTankLeft() + 1, position.y() + 1, 16, height - 2);
+	public void extractErrorOverlay(GuiGraphicsExtractor guiGraphics) {
+		screen.extractOverlay(guiGraphics, StorageScreenBase.ERROR_SLOT_COLOR, getTankLeft() + 1, position.y() + 1, 16, height - 2);
 	}
 
 	@Override
-	public void renderTooltip(StorageScreenBase<?> ignored, GuiGraphics guiGraphics, int mouseX, int mouseY) {
+	public void extractTooltip(StorageScreenBase<?> ignored, GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
 		int screenX = screen.getGuiLeft() + position.x() + 10;
 		int screenY = screen.getGuiTop() + position.y() + 1;
 		if (mouseX >= screenX && mouseX < screenX + 16 && mouseY >= screenY && mouseY < screenY + height - 2) {
 			Component contents = Component.translatable("gui.botaniabackpack.mana_tank.contents", String.format("%,d", container.getMana()),
 					String.format("%,d", container.getCapacity()));
 			Component interaction = Component.translatable("gui.botaniabackpack.mana_tank.interaction");
-			guiGraphics.renderTooltip(screen.getMinecraft().font, List.of(contents, interaction), Optional.empty(), mouseX, mouseY);
+			guiGraphics.setTooltipForNextFrame(screen.getFont(), List.of(contents, interaction), Optional.empty(), mouseX, mouseY);
 		}
 	}
 

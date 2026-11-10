@@ -1,9 +1,6 @@
 package velrondevs.botaniabackpack.gametest;
 
-import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.neoforged.neoforge.gametest.GameTestHolder;
-import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import velrondevs.botaniabackpack.BotaniaBackpackUpgrades;
 
 import java.io.ByteArrayInputStream;
@@ -24,14 +21,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-/**
- * Static link check of every class of this mod against the Sophisticated Core / Sophisticated Backpacks / Botania jars
- * that are actually installed. The dedicated test server cannot load client-only classes (so the GUI code is never run),
- * therefore this reads the class files as bytes and verifies that every referenced class, method and field exists. A
- * NoClassDefFoundError / NoSuchMethodError caused by an API change of those mods is reported here, client code included.
- */
-@GameTestHolder(BotaniaBackpackUpgrades.MOD_ID)
-@PrefixGameTestTemplate(false)
 public final class BinaryCompatibilityTests {
 	private static final String TEMPLATE = "empty";
 	private static final List<String> CHECKED_PREFIXES = List.of("net/p3pp3rf1y/", "velrondevs/botania/");
@@ -68,7 +57,7 @@ public final class BinaryCompatibilityTests {
 				}
 			}
 		}
-		// Negative controls: the checker must notice the API of the previous Sophisticated Core line (what crashed in 1.0.0)
+
 		ClassInfo guiManager = read(loader, "net/p3pp3rf1y/sophisticatedcore/client/gui/UpgradeGuiManager", cache);
 		helper.assertTrue(guiManager != null && hasMember(loader, guiManager, new MemberRef(guiManager.name, "registerInventoryControl",
 				"(Lnet/p3pp3rf1y/sophisticatedcore/common/gui/UpgradeContainerType;Lnet/p3pp3rf1y/sophisticatedcore/client/gui/UpgradeGuiManager$IUpgradeInventoryControlFactory;)V"),
@@ -106,8 +95,7 @@ public final class BinaryCompatibilityTests {
 		}
 		for (String parent : parents) {
 			if (UNCHECKED_PARENT_PREFIXES.stream().anyMatch(parent::startsWith)) {
-				// Platform parent (Minecraft, NeoForge, JDK): look the member up by reflection. Client-only parents cannot be
-				// loaded on the dedicated test server; there the member is given the benefit of the doubt.
+
 				try {
 					if (platformHas(Class.forName(parent.replace('/', '.'), false, loader), ref)) {
 						return true;
@@ -192,10 +180,9 @@ public final class BinaryCompatibilityTests {
 		final List<MemberRef> referencedMembers = new ArrayList<>();
 	}
 
-	/** Minimal class file reader: constant pool, hierarchy and the declared fields/methods. */
 	private static ClassInfo parse(byte[] bytes) throws IOException {
 		DataInputStream in = new DataInputStream(new ByteArrayInputStream(bytes));
-		in.readInt(); // magic
+		in.readInt();
 		in.readUnsignedShort();
 		in.readUnsignedShort();
 		int count = in.readUnsignedShort();
@@ -222,7 +209,7 @@ public final class BinaryCompatibilityTests {
 			}
 		}
 		ClassInfo info = new ClassInfo();
-		in.readUnsignedShort(); // access flags
+		in.readUnsignedShort();
 		info.name = className(constants, refs, in.readUnsignedShort());
 		int superIndex = in.readUnsignedShort();
 		info.superName = superIndex == 0 ? null : className(constants, refs, superIndex);
@@ -230,7 +217,7 @@ public final class BinaryCompatibilityTests {
 		for (int i = 0; i < interfaceCount; i++) {
 			info.interfaces.add(className(constants, refs, in.readUnsignedShort()));
 		}
-		for (int kind = 0; kind < 2; kind++) { // fields, then methods
+		for (int kind = 0; kind < 2; kind++) {
 			int members = in.readUnsignedShort();
 			for (int m = 0; m < members; m++) {
 				in.readUnsignedShort();

@@ -26,15 +26,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/**
- * Capability adapter between a placed Sophisticated Backpack and Botania's mana
- * APIs. The authoritative mana state remains in the upgrade stack.
- *
- * <p>One instance lives on each backpack block entity as a data attachment. It joins the Botania
- * mana network while a mana tank upgrade is installed and the backpack is placed in a loaded level.</p>
- */
 public final class ManaBackpackPool implements ManaPool, SparkAttachable {
-	/** Pools currently registered in Botania's mana network. Swept regularly for removed/unloaded backpacks. */
+
 	private static final List<ManaBackpackPool> REGISTERED_POOLS = new CopyOnWriteArrayList<>();
 
 	private final BackpackBlockEntity backpack;
@@ -71,7 +64,6 @@ public final class ManaBackpackPool implements ManaPool, SparkAttachable {
 		}
 	}
 
-	/** Unregisters pools whose backpack was broken, replaced or unloaded. */
 	public static void sweepInvalidPools() {
 		for (ManaBackpackPool pool : new ArrayList<>(REGISTERED_POOLS)) {
 			if (!pool.isBackpackStillPlaced()) {
@@ -97,7 +89,7 @@ public final class ManaBackpackPool implements ManaPool, SparkAttachable {
 
 	private void ensureRegistered(ManaTankUpgradeWrapper wrapper) {
 		Level level = backpack.getLevel();
-		if (level == null || level.isClientSide || backpack.isRemoved()) {
+		if (level == null || level.isClientSide() || backpack.isRemoved()) {
 			return;
 		}
 
@@ -113,7 +105,7 @@ public final class ManaBackpackPool implements ManaPool, SparkAttachable {
 
 	private void unregister() {
 		REGISTERED_POOLS.remove(this);
-		if (!registered || registeredLevel == null || registeredLevel.isClientSide) {
+		if (!registered || registeredLevel == null || registeredLevel.isClientSide()) {
 			registered = false;
 			registeredLevel = null;
 			return;
@@ -140,7 +132,6 @@ public final class ManaBackpackPool implements ManaPool, SparkAttachable {
 	public int getCurrentMana() {
 		return findUpgrade(backpack).map(ManaTankUpgradeWrapper::getManaAvailableForOutput).orElse(0);
 	}
-
 
 	@Override
 	public boolean isFull() {
@@ -174,7 +165,7 @@ public final class ManaBackpackPool implements ManaPool, SparkAttachable {
 
 	@Override
 	public void setColor(Optional<DyeColor> color) {
-		// Backpack color and spark network color are controlled independently.
+
 	}
 
 	@Override

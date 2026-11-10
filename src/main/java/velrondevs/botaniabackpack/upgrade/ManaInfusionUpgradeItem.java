@@ -16,8 +16,8 @@ public final class ManaInfusionUpgradeItem extends UpgradeItemBase<ManaInfusionU
 	private final IntSupplier slotsInRow;
 
 	public ManaInfusionUpgradeItem(boolean advanced, IntSupplier filterSlotCount, IntSupplier slotsInRow,
-			IUpgradeCountLimitConfig upgradeCountLimitConfig) {
-		super(upgradeCountLimitConfig);
+			IUpgradeCountLimitConfig upgradeCountLimitConfig, Properties properties) {
+		super(upgradeCountLimitConfig, properties);
 		this.advanced = advanced;
 		this.filterSlotCount = filterSlotCount;
 		this.slotsInRow = slotsInRow;

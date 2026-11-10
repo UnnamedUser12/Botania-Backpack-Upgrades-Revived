@@ -8,10 +8,6 @@ import net.neoforged.neoforge.fluids.BaseFlowingFluid;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
-/**
- * A non-placeable fluid used only by the Sophisticated Backpacks tank renderer.
- * Mana remains an integer Botania resource and is never exposed as a fluid.
- */
 public final class ModFluids {
 	private static final DeferredRegister<Fluid> FLUIDS = DeferredRegister.create(BuiltInRegistries.FLUID, BotaniaBackpackUpgrades.MOD_ID);
 

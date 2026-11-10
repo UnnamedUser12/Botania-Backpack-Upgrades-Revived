@@ -27,3 +27,6 @@ run
 
 # Datagen cache
 src/generated/resources/.cache/
+
+# Material retirado en el port a 26.1.2
+pendiente 26.1.2/

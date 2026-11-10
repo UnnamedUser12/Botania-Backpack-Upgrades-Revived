@@ -1,6 +1,8 @@
 # Changelog
 
 ## 1.0.1
+- Ported to Minecraft 26.1.2 / NeoForge 26.1.2.126 against Botania Revived 26.1.2 (1.0.7), Sophisticated Core 1.5.31 and Sophisticated Backpacks 3.26.18 (the new item transfer API: transactions, `ItemResource`, render data of the tank, fluid models, item definitions).
+- GameTests moved to the 26.1 registry-based test framework (49 tests, run with `./gradlew runGameTestServer`).
 - Fixed a crash on startup with Sophisticated Core 1.5.x / Sophisticated Backpacks 3.26.x (`NoClassDefFoundError: UpgradeGuiManager$IUpgradeInventoryPartFactory`).
 - Updated the mana tank bar to the new Sophisticated Core GUI API (`UpgradeInventoryControlBase` / `UpgradeGuiManager.registerInventoryControl`).
 - Minimum versions raised to Sophisticated Core 1.5.19 and Sophisticated Backpacks 3.26.17 (the 1.4.x / 3.25.x line is no longer supported). Tested with Core 1.5.19 and 1.5.23, Backpacks 3.26.17 and 3.26.19.

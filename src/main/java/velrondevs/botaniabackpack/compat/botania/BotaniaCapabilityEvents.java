@@ -30,12 +30,11 @@ import java.util.UUID;
 public final class BotaniaCapabilityEvents {
 	private BotaniaCapabilityEvents() {}
 
-	/** Mod-bus: registers the Botania capabilities on placed backpacks and on backpack items. */
 	@EventBusSubscriber(modid = BotaniaBackpackUpgrades.MOD_ID)
 	public static final class ModBus {
 		@SubscribeEvent
 		public static void registerCapabilities(RegisterCapabilitiesEvent event) {
-			// Placed backpack: mana pool + spark attachable, only while a mana tank upgrade is installed.
+
 			event.registerBlockEntity(BotaniaCapabilities.MANA_RECEIVER, ModBlocks.BACKPACK_TILE_TYPE.get(),
 					(backpack, side) -> ManaBackpackPool.findUpgrade(backpack).isPresent()
 							? backpack.getData(ModAttachments.MANA_POOL.get()) : null);
@@ -43,7 +42,6 @@ public final class BotaniaCapabilityEvents {
 					(backpack, side) -> ManaBackpackPool.findUpgrade(backpack).isPresent()
 							? backpack.getData(ModAttachments.MANA_POOL.get()) : null);
 
-			// Carried backpack: ManaItem availability follows the installed upgrades (resolved on every lookup).
 			for (Item item : BuiltInRegistries.ITEM) {
 				if (item instanceof BackpackItem) {
 					event.registerItem(BotaniaCapabilities.MANA_ITEM, (stack, ignored) -> {
@@ -57,16 +55,10 @@ public final class BotaniaCapabilityEvents {
 		private ModBus() {}
 	}
 
-	/** Game-bus: mana item discovery for equipped backpacks and mana-network housekeeping. */
 	@EventBusSubscriber(modid = BotaniaBackpackUpgrades.MOD_ID)
 	public static final class GameBus {
 		private static int sweepCounter;
 
-		/**
-		 * Adds backpacks from armor or modded equipment inventories without adding a
-		 * second copy of backpacks that Botania already found in the main, offhand,
-		 * or accessories inventories.
-		 */
 		@SubscribeEvent(priority = EventPriority.LOWEST)
 		public static void addEquippedBackpackManaItems(ManaItemsEvent event) {
 			SeenManaItems seen = new SeenManaItems();

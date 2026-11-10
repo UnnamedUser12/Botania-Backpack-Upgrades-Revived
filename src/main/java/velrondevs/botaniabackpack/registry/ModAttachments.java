@@ -14,7 +14,6 @@ public final class ModAttachments {
 	private static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES = DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES,
 			BotaniaBackpackUpgrades.MOD_ID);
 
-	/** Non-persistent per-block-entity Botania pool adapter; lives and dies with the placed backpack. */
 	public static final Supplier<AttachmentType<ManaBackpackPool>> MANA_POOL = ATTACHMENT_TYPES.register("mana_pool",
 			() -> AttachmentType.<ManaBackpackPool>builder(holder -> new ManaBackpackPool((BackpackBlockEntity) holder)).build());
 

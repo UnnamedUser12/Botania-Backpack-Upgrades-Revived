@@ -26,9 +26,7 @@ public final class ManaInfusionUpgradeContainer extends UpgradeContainerBase<Man
 
 	@Override
 	public void handlePacket(CompoundTag data) {
-		if (data.contains(DATA_SHOULD_WORK_IN_GUI)) {
-			setShouldWorkInGUI(data.getBoolean(DATA_SHOULD_WORK_IN_GUI));
-		}
+		data.getBoolean(DATA_SHOULD_WORK_IN_GUI).ifPresent(this::setShouldWorkInGUI);
 		filterLogicContainer.handlePacket(data);
 		if (upgradeWrapper.shouldWorkInGUI()) {
 			upgradeWrapper.queueAllMatchingSlots();

@@ -1,18 +1,12 @@
 package velrondevs.botaniabackpack.gametest;
 
-import net.minecraft.core.registries.Registries;
-import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.neoforged.neoforge.gametest.GameTestHolder;
-import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
-import net.p3pp3rf1y.sophisticatedbackpacks.backpack.BackpackItem;
 import net.p3pp3rf1y.sophisticatedcore.common.gui.UpgradeContainerRegistry;
-import net.p3pp3rf1y.sophisticatedcore.renderdata.RenderInfo;
 import top.theillusivec4.curios.api.CuriosApi;
 import velrondevs.botania.api.mana.ManaItemHandler;
 import velrondevs.botaniabackpack.BotaniaBackpackUpgrades;
@@ -21,8 +15,6 @@ import velrondevs.botaniabackpack.registry.ModItems;
 import velrondevs.botaniabackpack.upgrade.ManaInfusionUpgradeContainer;
 import velrondevs.botaniabackpack.upgrade.ManaTankUpgradeContainer;
 
-@GameTestHolder(BotaniaBackpackUpgrades.MOD_ID)
-@PrefixGameTestTemplate(false)
 public final class IntegrationExtrasTests {
 	private static final String TEMPLATE = "empty";
 
@@ -38,7 +30,7 @@ public final class IntegrationExtrasTests {
 			TestSupport.install(wrapper, (net.minecraft.world.item.Item) upgrade.get());
 			helper.assertTrue(!item.canAddUpgradeTo(wrapper, stack, true, false).successful(), "a second " + upgrade.getId() + " must be refused");
 		}
-		// Basic and advanced infusion are mutually exclusive
+
 		var advanced = ModItems.ADVANCED_MANA_INFUSION_UPGRADE.get();
 		helper.assertTrue(!advanced.canAddUpgradeTo(wrapper, new ItemStack(advanced), true, false).successful(),
 				"advanced infusion cannot join an installed basic infusion upgrade");
@@ -60,7 +52,6 @@ public final class IntegrationExtrasTests {
 		var supplyWrapper = wrapper.getUpgradeHandler().getTypeWrappers(velrondevs.botaniabackpack.upgrade.ManaSupplyUpgradeItem.TYPE).get(0);
 		helper.assertTrue(UpgradeContainerRegistry.instantiateContainer(player, 3, supplyWrapper).isEmpty(), "supply has no settings tab");
 
-		// Advanced infusion shares the same container type
 		ItemStack advanced = TestSupport.newBackpack();
 		var advancedWrapper = TestSupport.wrapper(advanced);
 		TestSupport.install(advancedWrapper, ModItems.ADVANCED_MANA_INFUSION_UPGRADE.get());
@@ -73,21 +64,24 @@ public final class IntegrationExtrasTests {
 	public static void tankIsRenderedInThePlacedBackpackModelAndSurvivesTheRenderDataRoundTrip(GameTestHelper helper) {
 		ItemStack backpack = TestSupport.backpackWithTank(0);
 		var wrapper = TestSupport.wrapper(backpack);
-		helper.assertTrue(wrapper.getRenderInfo().getTankRenderInfos().size() <= 1, "baseline render info");
+		helper.assertTrue(wrapper.getRenderDataHandler().getTankRenderData().size() <= 1, "baseline render info");
 		TestSupport.tank(wrapper).receiveInternalMana(500_000);
 
-		var tanks = wrapper.getRenderInfo().getTankRenderInfos();
+		var tanks = wrapper.getRenderDataHandler().getTankRenderData();
 		helper.assertTrue(tanks.size() == 1, "a half-full mana tank must be rendered, tank render infos: " + tanks.size());
 		var info = tanks.values().iterator().next();
 		helper.assertTrue(info.getFluid().isPresent() && info.getFluid().get().getFluid() == velrondevs.botaniabackpack.registry.ModFluids.MANA_DISPLAY.get(),
 				"the display fluid is the mana pseudo fluid");
-		helper.assertTrue(Math.abs(info.getFillRatio() - 0.5F) < 0.001F, "fill ratio 0.5 but was " + info.getFillRatio());
+		helper.assertTrue(Math.abs(info.fillRatio() - 0.5F) < 0.001F, "fill ratio 0.5 but was " + info.fillRatio());
 
-		var roundTrip = net.p3pp3rf1y.sophisticatedcore.upgrades.IRenderedTankUpgrade.TankRenderInfo.deserialize(info.serialize());
-		helper.assertTrue(roundTrip.getFluid().isPresent() && roundTrip.getFillRatio() == info.getFillRatio(), "render info survives serialization");
+		var registries = helper.getLevel().registryAccess();
+		var ops = registries.createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE);
+		var encoded = net.p3pp3rf1y.sophisticatedcore.renderdata.RenderData.TankRenderData.CODEC.encodeStart(ops, info).getOrThrow();
+		var roundTrip = net.p3pp3rf1y.sophisticatedcore.renderdata.RenderData.TankRenderData.CODEC.parse(ops, encoded).getOrThrow();
+		helper.assertTrue(roundTrip.getFluid().isPresent() && roundTrip.fillRatio() == info.fillRatio(), "render info survives serialization");
 
 		TestSupport.tank(wrapper).extractInternalMana(500_000);
-		helper.assertTrue(wrapper.getRenderInfo().getTankRenderInfos().values().stream().allMatch(i -> i.getFluid().isEmpty()),
+		helper.assertTrue(wrapper.getRenderDataHandler().getTankRenderData().values().stream().allMatch(i -> i.getFluid().isEmpty()),
 				"an emptied tank renders no fluid");
 		helper.succeed();
 	}
@@ -99,7 +93,10 @@ public final class IntegrationExtrasTests {
 		TestSupport.install(TestSupport.wrapper(backpack), ModItems.MANA_SUPPLY_UPGRADE.get());
 		var curios = CuriosApi.getCuriosInventory(player);
 		helper.assertTrue(curios.isPresent(), "player has a Curios inventory");
+		curios.get().reset();
 		curios.get().setEquippedCurio("back", 0, backpack);
+		helper.assertTrue(curios.get().getCurios().containsKey("back"), "curios slots: " + curios.get().getCurios().keySet());
+		helper.assertTrue(!curios.get().getCurios().get("back").getStacks().getStackInSlot(0).isEmpty(), "back slot holds the backpack");
 
 		ItemStack consumer = new ItemStack(Items.DIAMOND_SWORD);
 		var handler = ManaItemHandler.instance();
@@ -123,10 +120,5 @@ public final class IntegrationExtrasTests {
 		}
 		helper.assertTrue(own.size() == 4, "own tab has exactly the 4 upgrades, has " + own.size());
 		helper.succeed();
-	}
-
-	@SuppressWarnings("unused")
-	private static void unused(RenderInfo r, BackpackItem b, net.minecraft.resources.ResourceKey<?> k) {
-		var x = Registries.ITEM;
 	}
 }

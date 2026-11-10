@@ -38,6 +38,6 @@ public final class ManaTankUpgradeTab extends UpgradeSettingsTab<ManaTankUpgrade
 
 	@Override
 	protected void moveSlotsToTab() {
-		// The upgrade has no item slots.
+
 	}
 }

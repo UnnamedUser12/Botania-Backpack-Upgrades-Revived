@@ -10,7 +10,6 @@ import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.p3pp3rf1y.sophisticatedbackpacks.init.ModBlocks;
 import velrondevs.botania.api.BotaniaClientCapabilities;
 
-/** Shows the exact mana amount in the Wand of the Forest HUD when pointing at a placed backpack with a mana tank. */
 @EventBusSubscriber(modid = BotaniaBackpackUpgrades.MOD_ID, value = Dist.CLIENT)
 public final class ClientCapabilityEvents {
 	@SubscribeEvent

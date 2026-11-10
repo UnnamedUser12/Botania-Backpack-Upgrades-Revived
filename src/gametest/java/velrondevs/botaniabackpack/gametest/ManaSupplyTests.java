@@ -1,21 +1,15 @@
 package velrondevs.botaniabackpack.gametest;
 
-import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.neoforged.neoforge.gametest.GameTestHolder;
-import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import velrondevs.botania.api.mana.ManaItemHandler;
 import velrondevs.botaniabackpack.BotaniaBackpackUpgrades;
 import velrondevs.botaniabackpack.registry.ModItems;
 import velrondevs.botaniabackpack.upgrade.ManaTankUpgradeWrapper;
 
-@GameTestHolder(BotaniaBackpackUpgrades.MOD_ID)
-@PrefixGameTestTemplate(false)
 public final class ManaSupplyTests {
 	private static final String TEMPLATE = "empty";
 
@@ -45,11 +39,9 @@ public final class ManaSupplyTests {
 		helper.assertTrue(ManaItemHandler.instance().requestManaExact(consumer, player, 1_000, true), "exact request satisfied");
 		helper.assertTrue(tank(backpack).getMana() == 10_000 - 2_234, "tank after exact request " + tank(backpack).getMana());
 
-		// Simulation (remove=false) does not consume
 		helper.assertTrue(ManaItemHandler.instance().requestMana(consumer, player, 500, false) == 500, "simulated request reports 500");
 		helper.assertTrue(tank(backpack).getMana() == 10_000 - 2_234, "simulation did not consume");
 
-		// More than available: partial for requestMana, refusal and no change for requestManaExact
 		int rest = tank(backpack).getMana();
 		helper.assertTrue(!ManaItemHandler.instance().requestManaExact(consumer, player, rest + 1, true), "exact request beyond stock fails");
 		helper.assertTrue(tank(backpack).getMana() == rest, "failed exact request leaves mana untouched");
@@ -75,9 +67,9 @@ public final class ManaSupplyTests {
 		ServerPlayer player = TestSupport.mockPlayer(helper);
 		ItemStack backpack = backpackWithTankAndSupply(10_000);
 		player.getInventory().setItem(0, backpack);
-		// Same backpack data also present as offhand copy: same storage UUID must not double count
+
 		ItemStack duplicateView = backpack.copy();
-		player.getInventory().offhand.set(0, duplicateView);
+		player.setItemSlot(EquipmentSlot.OFFHAND, duplicateView);
 
 		long listed = ManaItemHandler.instance().getManaItems(player).stream()
 				.filter(s -> s.getItem() == backpack.getItem()).count();
@@ -90,7 +82,7 @@ public final class ManaSupplyTests {
 	@GameTest(template = TEMPLATE)
 	public static void withoutSupplyUpgradeThePlayerItemsGetNothing(GameTestHelper helper) {
 		ServerPlayer player = TestSupport.mockPlayer(helper);
-		ItemStack backpack = TestSupport.backpackWithTank(10_000); // tank only
+		ItemStack backpack = TestSupport.backpackWithTank(10_000);
 		player.getInventory().setItem(2, backpack);
 		player.setItemSlot(EquipmentSlot.CHEST, TestSupport.backpackWithTank(10_000));
 		ItemStack consumer = new ItemStack(Items.DIAMOND_SWORD);
@@ -118,7 +110,7 @@ public final class ManaSupplyTests {
 		var manaItem = TestSupport.manaItem(backpack);
 		helper.assertTrue(manaItem != null, "has capability");
 		helper.assertTrue(manaItem.getMana() == 1_000 && manaItem.getMaxMana() == 1_000_000, "values reflect the tank");
-		manaItem.addMana(500); // positive additions are ignored: the backpack is a source only
+		manaItem.addMana(500);
 		helper.assertTrue(tank(backpack).getMana() == 1_000, "positive addMana ignored");
 		manaItem.addMana(-300);
 		helper.assertTrue(tank(backpack).getMana() == 700, "negative addMana consumes");
@@ -126,7 +118,4 @@ public final class ManaSupplyTests {
 		helper.assertTrue(manaItem.canExportManaToItem(new ItemStack(Items.STICK)) && !manaItem.canExportManaToPool(null), "exports to items only");
 		helper.succeed();
 	}
-
-	@SuppressWarnings("unused")
-	private static void unused(Player p) {}
 }

@@ -25,7 +25,6 @@ public final class BotaniaBackpackConfig {
 			.defineInRange("advancedManaInfusion.slotsInRow", 4, 1, 6);
 	public static final ModConfigSpec SPEC = BUILDER.build();
 
-	/** Reads a config value, falling back to its default while the server config is not loaded yet (e.g. client side before sync). */
 	public static IntSupplier safe(ModConfigSpec.IntValue value) {
 		return () -> {
 			try {

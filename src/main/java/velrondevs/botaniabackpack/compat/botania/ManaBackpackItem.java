@@ -14,13 +14,6 @@ import velrondevs.botania.api.mana.ManaItem;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Dynamic, source-only ManaItem view of a Sophisticated Backpack.
- *
- * <p>The view resolves the current upgrade wrappers for every operation. This
- * is intentional: a backpack stack keeps the same capability registration while
- * upgrades can be installed, disabled, swapped, or removed.</p>
- */
 public final class ManaBackpackItem implements ManaItem {
 	private final ItemStack backpack;
 
@@ -39,8 +32,7 @@ public final class ManaBackpackItem implements ManaItem {
 
 	@Override
 	public int getMaxMana() {
-		// A positive fallback protects callers that retained the capability while
-		// the enabling upgrade was being removed from dividing by zero.
+
 		return findManaTank().map(ManaTankUpgradeWrapper::getCapacity).orElse(1);
 	}
 

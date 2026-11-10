@@ -52,10 +52,8 @@ public final class ManaTankUpgradeContainer extends UpgradeContainerBase<ManaTan
 
 	@Override
 	public void handlePacket(CompoundTag data) {
-		if (data.contains(DATA_TRANSFER_MODE)) {
-			setTransferMode(ManaTransferMode.fromName(data.getString(DATA_TRANSFER_MODE)));
-		}
-		if (data.getBoolean(DATA_CURSOR_INTERACTION)) {
+		data.getString(DATA_TRANSFER_MODE).ifPresent(mode -> setTransferMode(ManaTransferMode.fromName(mode)));
+		if (data.getBooleanOr(DATA_CURSOR_INTERACTION, false)) {
 			handleCursorInteraction();
 		}
 	}
@@ -70,9 +68,6 @@ public final class ManaTankUpgradeContainer extends UpgradeContainerBase<ManaTan
 			return;
 		}
 
-		// ManaItem capabilities usually mutate their owning stack in place. Force
-		// an explicit carried-stack update so the client receives the new data
-		// immediately instead of waiting for the next menu synchronization pass.
 		menu.setCarried(cursorStack);
 		serverPlayer.connection.send(
 				new ClientboundContainerSetSlotPacket(-1, menu.incrementStateId(), -1, menu.getCarried().copy()));

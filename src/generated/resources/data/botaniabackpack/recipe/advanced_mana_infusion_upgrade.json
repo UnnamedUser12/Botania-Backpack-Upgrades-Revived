@@ -2,18 +2,10 @@
   "type": "sophisticatedcore:upgrade_next_tier",
   "category": "misc",
   "key": {
-    "D": {
-      "tag": "botania:dragonstone_gems"
-    },
-    "E": {
-      "tag": "botania:elementium_ingots"
-    },
-    "P": {
-      "item": "botania:pixie_dust"
-    },
-    "U": {
-      "item": "botaniabackpack:mana_infusion_upgrade"
-    }
+    "D": "#botania:dragonstone_gems",
+    "E": "#botania:elementium_ingots",
+    "P": "botania:pixie_dust",
+    "U": "botaniabackpack:mana_infusion_upgrade"
   },
   "pattern": [
     " E ",
@@ -21,7 +13,6 @@
     " P "
   ],
   "result": {
-    "count": 1,
     "id": "botaniabackpack:advanced_mana_infusion_upgrade"
   }
 }
