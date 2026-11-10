@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.2
+- The mod now requires Botania Revived 2.0.0 or newer, and is built and tested against Botania Revived 26.1.2 (2.0.0).
+
 ## 1.0.1
 - Ported to Minecraft 26.1.2 / NeoForge 26.1.2.126 against Botania Revived 26.1.2 (1.0.7), Sophisticated Core 1.5.31 and Sophisticated Backpacks 3.26.18 (the new item transfer API: transactions, `ItemResource`, render data of the tank, fluid models, item definitions).
 - GameTests moved to the 26.1 registry-based test framework (49 tests, run with `./gradlew runGameTestServer`).
